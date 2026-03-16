@@ -4,7 +4,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Home from '../../../screens/Home';
 import Tasks from '../../../screens/Tasks';
 import Schedule from '../../../screens/Schedule';
-import Alerts from '../../../screens/Alerts';
+import Notifications from '../../../screens/Notifications';
 import Profile from '../../../screens/Profile';
 import { AppText } from '../../../components';
 import { colors } from '../../utilities/colors';
@@ -45,7 +45,7 @@ const CustomTabBar = ({ state, descriptors, navigation }: any) => {
                         case 'Home': iconName = 'home'; break;
                         case 'Tasks': iconName = 'file-text'; break;
                         case 'Schedule': iconName = 'calendar'; break;
-                        case 'Alerts': iconName = 'bell'; break;
+                        case 'Notifications': iconName = 'bell'; break;
                         case 'Profile': iconName = 'user'; break;
                     }
                     return <Icon name={iconName} size={23} color={color} />;
@@ -96,7 +96,7 @@ const BottomTabNavigation = () => {
             <Tab.Screen name="Home" component={Home} />
             <Tab.Screen name="Tasks" component={Tasks} />
             <Tab.Screen name="Schedule" component={Schedule} />
-            <Tab.Screen name="Alerts" component={Alerts} />
+            <Tab.Screen name="Notifications" component={Notifications} />
             <Tab.Screen name="Profile" component={Profile} />
         </Tab.Navigator>
     );

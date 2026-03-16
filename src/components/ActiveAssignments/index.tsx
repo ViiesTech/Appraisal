@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { View, FlatList, TouchableOpacity, LayoutChangeEvent } from 'react-native';
-import { ShadowCard, AppText, ProgressBar } from '..';
+import React from 'react';
+import { View, FlatList, TouchableOpacity } from 'react-native';
+import { ShadowCard, AppText, TaskCard } from '..';
 import Icon from 'react-native-vector-icons/Feather';
 import { colors, fontSize, fontFamily } from '../../services/utilities';
 import styles from './style';
@@ -14,6 +14,9 @@ const DUMMY_DATA = [
         address: '9012 Maple Drive, San Diego, CA',
         progress: 65,
         dueDate: 'Jan 25, 2026',
+        statusColor: colors.statusBlue,
+        priorityColor: colors.priorityRedText,
+        progressColor: colors.statusBlue,
     },
     {
         id: '2',
@@ -22,6 +25,9 @@ const DUMMY_DATA = [
         address: '3456 Elm Street, Sacramento, CA',
         progress: 30,
         dueDate: 'Jan 26, 2026',
+        statusColor: colors.statusAmber,
+        priorityColor: colors.priorityAmberText,
+        progressColor: colors.statusAmber,
     },
     {
         id: '3',
@@ -30,6 +36,9 @@ const DUMMY_DATA = [
         address: '7890 Birch Road, Oakland, CA',
         progress: 0,
         dueDate: 'Jan 28, 2026',
+        statusColor: colors.statusGray,
+        priorityColor: colors.priorityGrayText,
+        progressColor: colors.statusGray,
     },
     {
         id: '4',
@@ -38,6 +47,9 @@ const DUMMY_DATA = [
         address: '1122 Walnut St, San Jose, CA',
         progress: 80,
         dueDate: 'Jan 29, 2026',
+        statusColor: colors.statusBlue,
+        priorityColor: colors.priorityRedText,
+        progressColor: colors.statusBlue,
     },
     {
         id: '5',
@@ -46,6 +58,9 @@ const DUMMY_DATA = [
         address: '3344 Oak St, San Francisco, CA',
         progress: 45,
         dueDate: 'Jan 30, 2026',
+        statusColor: colors.statusAmber,
+        priorityColor: colors.priorityAmberText,
+        progressColor: colors.statusAmber,
     },
     {
         id: '6',
@@ -54,80 +69,31 @@ const DUMMY_DATA = [
         address: '5566 Pine St, Los Angeles, CA',
         progress: 10,
         dueDate: 'Jan 31, 2026',
+        statusColor: colors.statusGray,
+        priorityColor: colors.priorityGrayText,
+        progressColor: colors.statusGray,
     },
 ];
 
 const ActiveAssignments = () => {
     const navigation = useNavigation<any>();
-    const [itemHeight, setItemHeight] = useState(0);
 
-    const onItemLayout = (event: LayoutChangeEvent) => {
-        if (itemHeight === 0) {
-            const { height } = event.nativeEvent.layout;
-            setItemHeight(height);
-        }
-    };
-
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'In Progress': return colors.statusBlue;
-            case 'Scheduled': return colors.statusAmber;
-            case 'Pending': return colors.statusGray;
-            default: return colors.statusGray;
-        }
-    };
-
-    const getPriorityColors = (priority: string) => {
-        switch (priority) {
-            case 'High': return { bg: colors.priorityRedBG, text: colors.priorityRedText };
-            case 'Medium': return { bg: colors.priorityAmberBG, text: colors.priorityAmberText };
-            case 'Low': return { bg: colors.priorityGrayBG, text: colors.priorityGrayText };
-            default: return { bg: colors.priorityGrayBG, text: colors.priorityGrayText };
-        }
-    };
-
-    const renderItem = ({ item, index }: { item: typeof DUMMY_DATA[0], index: number }) => {
-        const statusColor = getStatusColor(item.status);
-        const { bg: priorityBG, text: priorityText } = getPriorityColors(item.priority);
-
+    const renderItem = ({ item }: { item: typeof DUMMY_DATA[0] }) => {
         return (
-            <View
-                style={styles.itemContainer}
-                onLayout={index === 0 ? onItemLayout : undefined}
-            >
-                <View style={styles.itemHeader}>
-                    <View style={styles.statusContainer}>
-                        <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-                        <AppText color={colors.textLighter} fontFamily={fontFamily.Bold}
-                            fontSize={fontSize.smallM} style={styles.statusText}>{item.status}</AppText>
-                    </View>
-                    <View style={[styles.priorityBadge, { backgroundColor: priorityBG }]}>
-                        <AppText fontFamily={fontFamily.Bold} fontSize={fontSize.small} style={[styles.priorityText, { color: priorityText }]}>
-                            {item.priority}
-                        </AppText>
-                    </View>
-                </View>
-
-                <AppText color={colors.textDark} fontFamily={fontFamily.Bold} style={styles.addressText}>{item.address}</AppText>
-
-                <View style={styles.progressHeader}>
-                    <AppText fontSize={fontSize.small} fontFamily={fontFamily.Regular}
-                        color={colors.textLighter} style={styles.progressLabel}>Progress</AppText>
-                    <AppText fontSize={fontSize.small} fontFamily={fontFamily.Black}
-                        color={colors.textLighter} style={styles.progressPercent}>{item.progress}%</AppText>
-                </View>
-                <ProgressBar progress={item.progress} fillColor={statusColor} key={item.id} />
-
-                <View style={styles.dueContainer}>
-                    <Icon name="clock" size={fontSize.small} color={colors.placeholderText} />
-                    <AppText color={colors.placeholderText} fontSize={fontSize.small}
-                        fontFamily={fontFamily.Regular} style={styles.dueText}>Due: {item.dueDate}</AppText>
-                </View>
-            </View>
+            <TaskCard
+                status={item.status}
+                priority={item.priority}
+                address={item.address}
+                progress={item.progress}
+                dueDate={item.dueDate}
+                statusColor={item.statusColor}
+                priorityColor={item.priorityColor}
+                progressColor={item.progressColor}
+                variant="home"
+                           onPress={() => navigation.navigate('AssignmentDetails')}
+            />
         );
     };
-
-    const listHeight = itemHeight > 0 ? (itemHeight * 3) + 25 : undefined; // +25 buffer for 3 items and gaps
 
     return (
         <ShadowCard style={styles.container}>
@@ -146,13 +112,12 @@ const ActiveAssignments = () => {
             </View>
 
             <FlatList
-                data={DUMMY_DATA}
+                data={DUMMY_DATA.slice(0, 3)}
                 renderItem={renderItem}
                 showsVerticalScrollIndicator={false}
                 keyExtractor={(item) => item.id}
-                scrollEnabled={true}
-                nestedScrollEnabled={true}
-                style={[styles.flatList]}
+                scrollEnabled={false}
+                style={styles.flatList}
                 contentContainerStyle={styles.listContent}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>

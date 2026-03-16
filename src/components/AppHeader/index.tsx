@@ -1,9 +1,11 @@
+/* eslint-disable react-native/no-inline-styles */
 import React from 'react';
-import { View, TouchableOpacity, ViewStyle, ImageBackground } from 'react-native';
+import { View, TouchableOpacity, ViewStyle, ImageBackground, TextInput } from 'react-native';
 import AppText from '../AppText';
 import AppInput from '../AppInput';
 import AppTabs from '../AppTabs';
 import Icon from 'react-native-vector-icons/Feather';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, fontFamily, fontSize } from '../../services/utilities';
 import images from '../../services/utilities/images';
@@ -21,6 +23,12 @@ interface Props {
     searchProps?: any; // Partial props for AppInput
     tabProps?: any; // Props for AppTabs
     containerStyle?: ViewStyle;
+    showSearchBar?: boolean;
+    renderCustomTabs?:React.ReactNode;
+    rightActionText?: string;
+    rightActionIcon?: string;
+    onRightActionPress?: () => void;
+    rightActionNode?: React.ReactNode;
 }
 
 const AppHeader = ({
@@ -34,6 +42,12 @@ const AppHeader = ({
     searchProps,
     tabProps,
     containerStyle,
+    showSearchBar,
+    renderCustomTabs,
+    rightActionText,
+    rightActionIcon,
+    onRightActionPress,
+    rightActionNode,
 }: Props) => {
     const navigation = useNavigation();
 
@@ -80,16 +94,47 @@ const AppHeader = ({
                         )}
                     </View>
                 )}
+
+                {rightActionNode ? (
+                    rightActionNode
+                ) : (rightActionText || rightActionIcon) ? (
+                    <TouchableOpacity
+                        activeOpacity={0.7}
+                        onPress={onRightActionPress}
+                        style={[styles.rightActionBtn, showBackground && styles.rightActionBtnBackground]}
+                    >
+                        {rightActionIcon ? (
+                            <Icon
+                                name={rightActionIcon}
+                                size={14}
+                                color={showBackground ? colors.blueNormal : colors.textDark}
+                            />
+                        ) : null}
+                        {rightActionText ? (
+                            <AppText
+                                fontSize={fontSize.smallM}
+                                fontFamily={fontFamily.Bold}
+                                color={showBackground ? colors.blueNormal : colors.textDark}
+                                style={styles.rightActionText}
+                            >
+                                {rightActionText}
+                            </AppText>
+                        ) : null}
+                    </TouchableOpacity>
+                ) : null}
             </View>
+            {showSearchBar && (
+                <View style={{borderColor: '#D1D5DC', borderWidth: 1, borderRadius: 15, padding: 8,paddingHorizontal:15, flexDirection: 'row', alignItems: 'center'}}>
+                    <Ionicons name="search" size={20} color="#99A1AF" />
+                    <TextInput placeholderTextColor="#858585" placeholder="Search templates..." style={{marginLeft: 8, flex: 1}} />
+                </View>
+            )}
 
-            {showTabs && (
-                <AppScrollView>
-
+            {showTabs ? (
                 <View style={styles.tabsContainer}>
                     <AppTabs {...tabProps} />
                 </View>
-                </AppScrollView>
-            )}
+            ) : renderCustomTabs ? (renderCustomTabs) : null}
 
             {showSearch && (
                 <View style={styles.searchContainer}>

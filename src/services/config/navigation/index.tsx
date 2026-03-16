@@ -14,6 +14,13 @@ import { useSelector } from 'react-redux';
 import { selectAuthToken } from '../../../store/authSlice';
 import BottomTabNavigation from '../BottomTabNavigation';
 import TemplateLibrary from '../../../screens/TemplateLibrary';
+import AssignmentDetails from '../../../screens/AssignmentDetails';
+import ScheduleInspection from '../../../screens/ScheduleInspection';
+import InspectionScheduled from '../../../screens/InspectionScheduled';
+import InspectionChecklist from '../../../screens/InspectionChecklist';
+import SubmitFinalReport from '../../../screens/SubmitFinalReport';
+import EditProfile from '../../../screens/EditProfile';
+import Settings from '../../../screens/Settings';
 
 export type MainStackParamList = {
     Onbording: undefined;
@@ -25,6 +32,13 @@ export type MainStackParamList = {
     VerifyAccount: { email: string };
     BottomTab: undefined;
     TemplateLibrary: undefined;
+    AssignmentDetails: undefined;
+    ScheduleInspection: undefined;
+    InspectionScheduled: { date: string; time: string };
+    InspectionChecklist: undefined;
+    SubmitFinalReport: undefined;
+    EditProfile: undefined;
+    Settings: undefined;
 };
 
 const Stack = createStackNavigator<MainStackParamList>();
@@ -71,6 +85,13 @@ const AppStack = () => {
         >
             <Stack.Screen name="BottomTab" component={BottomTabNavigation} />
             <Stack.Screen name="TemplateLibrary" component={TemplateLibrary} />
+                <Stack.Screen name="AssignmentDetails" component={AssignmentDetails} />
+                <Stack.Screen name="ScheduleInspection" component={ScheduleInspection} />
+                <Stack.Screen name="InspectionScheduled" component={InspectionScheduled} />
+                <Stack.Screen name="InspectionChecklist" component={InspectionChecklist} />
+                <Stack.Screen name="SubmitFinalReport" component={SubmitFinalReport} />
+                <Stack.Screen name="EditProfile" component={EditProfile} />
+                <Stack.Screen name="Settings" component={Settings} />
         </Stack.Navigator>
     );
 };

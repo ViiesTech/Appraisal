@@ -29,7 +29,6 @@ const styles = StyleSheet.create({
         gap: sizes.screenWidth * 0.03,
     },
     flatList: {
-        maxHeight:sizes.screenHeight * 0.53
     },
     itemContainer: {
         backgroundColor: colors.blueGrey,

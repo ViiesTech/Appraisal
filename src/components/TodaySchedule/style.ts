@@ -26,7 +26,6 @@ const styles = StyleSheet.create({
         gap:sizes.screenWidth * 0.03
     },
     flatList: {
-        maxHeight: sizes.screenHeight * 0.2,
     },
     itemContainer: {
         flexDirection: 'row',

@@ -134,13 +134,12 @@ const TodaySchedule = ({ date, onPress }: TodayScheduleProps) => {
             </View>
 
             <FlatList
-                data={DUMMY_DATA}
+                data={DUMMY_DATA.slice(0, 2)}
                 renderItem={renderItem}
                 showsVerticalScrollIndicator={false}
                 keyExtractor={(item) => item.id}
-                scrollEnabled={true}
-                nestedScrollEnabled={true}
-                style={[styles.flatList]}
+                scrollEnabled={false}
+                style={styles.flatList}
                 contentContainerStyle={styles.listContent}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>

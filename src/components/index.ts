@@ -18,3 +18,4 @@ export { default as TodaySchedule } from './TodaySchedule';
 export { default as ActiveAssignments } from './ActiveAssignments';
 export { default as ProgressBar } from './ProgressBar';
 export { default as AppHeader } from './AppHeader';
+export { default as TaskCard } from './TaskCard';

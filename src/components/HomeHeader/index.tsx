@@ -23,9 +23,9 @@ const HomeHeader = () => {
         >
             <View style={styles.topRow}>
                 <AppImage source={images.logoWhite} style={styles.logo} resizeMode="contain" />
-                <TouchableOpacity activeOpacity={0.8} onPress={handleLogout}>
+                <View >
                     <AppImage source={images.logoWhite} style={styles.userImage} resizeMode="contain" />
-                </TouchableOpacity>
+                </View>
             </View>
 
             <View style={styles.content}>

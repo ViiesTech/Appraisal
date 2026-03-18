@@ -1,8 +1,16 @@
-import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { Wrapper, AppText, AppHeader, AppScrollView } from '../../components';
+import React, { useState } from 'react';
+import { View, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+    Wrapper,
+    AppText,
+    AppHeader,
+    AppScrollView,
+    StatsCards,
+    AppImage,
+} from '../../components';
 import { colors, fontFamily, fontSize, sizes } from '../../services/utilities';
 import Icon from 'react-native-vector-icons/Feather';
+import { launchImageLibrary } from 'react-native-image-picker';
 import type { ViewStyle } from 'react-native';
 
 const headerContainerStyle: ViewStyle = {
@@ -10,11 +18,11 @@ const headerContainerStyle: ViewStyle = {
     backgroundColor: colors.white,
 };
 
-const stats = [
-    { id: '1', icon: 'book-open', value: '156', label: 'Total Projects' },
-    { id: '2', icon: 'trending-up', value: '98%', label: 'Success Rate' },
-    { id: '3', icon: 'star', value: '4.9', label: 'Avg Rating' },
-    { id: '4', icon: 'calendar', value: '10y', label: 'Experience' },
+const profileStats = [
+    { id: '1', icon: 'book-open', value: '156', title: 'Total Projects' },
+    { id: '2', icon: 'trending-up', value: '98%', title: 'Success Rate' },
+    { id: '3', icon: 'star', value: '4.9', title: 'Avg Rating' },
+    { id: '4', icon: 'calendar', value: '10y', title: 'Experience' },
 ];
 
 const activities = [
@@ -42,6 +50,34 @@ const activities = [
 ];
 
 const Profile = ({ navigation }: any) => {
+    const [profileImageUri, setProfileImageUri] = useState<string | null>(null);
+
+    const handlePickProfileImage = async () => {
+        try {
+            const result = await launchImageLibrary({
+                mediaType: 'photo',
+                selectionLimit: 1,
+                quality: 0.8,
+            });
+
+            if (result.didCancel) {
+                return;
+            }
+
+            if (result.errorCode) {
+                Alert.alert('Image Picker', result.errorMessage || 'Unable to select image');
+                return;
+            }
+
+            const selectedAsset = result.assets?.[0];
+            if (selectedAsset?.uri) {
+                setProfileImageUri(selectedAsset.uri);
+            }
+        } catch {
+            Alert.alert('Image Picker', 'Something went wrong while selecting image');
+        }
+    };
+
     return (
         <Wrapper
             style={styles.container}
@@ -54,16 +90,35 @@ const Profile = ({ navigation }: any) => {
                 showBackground
                 hideBackButton
                 containerStyle={headerContainerStyle}
-                rightActionIcon="settings"
-                onRightActionPress={() => navigation.navigate('Settings')}
+                rightActionNode={
+                    <TouchableOpacity
+                        activeOpacity={0.75}
+                        style={styles.settingsBtn}
+                        onPress={() => navigation.navigate('Settings')}
+                    >
+                        <Icon name="settings" size={14} color={colors.blueNormal} />
+                    </TouchableOpacity>
+                }
                 renderCustomTabs={
                     <View style={styles.profileHeadWrap}>
-                        <View style={styles.avatarWrap}>
-                            <Icon name="user" size={32} color={colors.blueNormal} />
+                        <TouchableOpacity
+                            activeOpacity={0.85}
+                            style={styles.avatarWrap}
+                            onPress={handlePickProfileImage}
+                        >
+                            {profileImageUri ? (
+                                <AppImage
+                                    source={{ uri: profileImageUri }}
+                                    style={styles.avatarImage}
+                                    resizeMode="cover"
+                                />
+                            ) : (
+                                <Icon name="user" size={32} color={colors.blueNormal} />
+                            )}
                             <View style={styles.avatarEditBadge}>
                                 <Icon name="edit-2" size={9} color={colors.blueNormal} />
                             </View>
-                        </View>
+                        </TouchableOpacity>
                         <AppText
                             fontSize={fontSize.h6}
                             fontFamily={fontFamily.Bold}
@@ -84,30 +139,7 @@ const Profile = ({ navigation }: any) => {
             />
 
             <AppScrollView contentContainerStyle={styles.scrollContent}>
-                <View style={styles.statsGrid}>
-                    {stats.map(item => (
-                        <View key={item.id} style={styles.statCard}>
-                            <View style={styles.statIconCircle}>
-                                <Icon name={item.icon} size={16} color={colors.blueNormal} />
-                            </View>
-                            <AppText
-                                fontSize={fontSize.h6}
-                                fontFamily={fontFamily.Bold}
-                                color={colors.textDark}
-                                style={styles.statValue}
-                            >
-                                {item.value}
-                            </AppText>
-                            <AppText
-                                fontSize={fontSize.small}
-                                fontFamily={fontFamily.Regular}
-                                color={colors.textLighter}
-                            >
-                                {item.label}
-                            </AppText>
-                        </View>
-                    ))}
-                </View>
+                <StatsCards data={profileStats} />
 
                 <View style={styles.card}>
                     <View style={styles.cardHeader}>
@@ -143,7 +175,7 @@ const Profile = ({ navigation }: any) => {
                 <View style={styles.card}>
                     <AppText style={styles.cardTitle}>Contact Information</AppText>
 
-                    <View style={styles.contactRow}>
+                    <View style={styles.contactCardRow}>
                         <View style={styles.contactIconWrap}>
                             <Icon name="mail" size={14} color={colors.placeholderText} />
                         </View>
@@ -153,7 +185,7 @@ const Profile = ({ navigation }: any) => {
                         </View>
                     </View>
 
-                    <View style={styles.contactRow}>
+                    <View style={styles.contactCardRow}>
                         <View style={styles.contactIconWrap}>
                             <Icon name="phone" size={14} color={colors.placeholderText} />
                         </View>
@@ -163,7 +195,7 @@ const Profile = ({ navigation }: any) => {
                         </View>
                     </View>
 
-                    <View style={styles.contactRow}>
+                    <View style={styles.contactCardRow}>
                         <View style={styles.contactIconWrap}>
                             <Icon name="map-pin" size={14} color={colors.placeholderText} />
                         </View>
@@ -219,13 +251,27 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginTop: sizes.screenHeight * 0.004,
     },
+    settingsBtn: {
+        marginLeft: 'auto',
+        borderWidth: 1,
+        borderColor: colors.white,
+        backgroundColor: colors.white,
+        borderRadius: sizes.screenWidth * 0.03,
+        paddingHorizontal: sizes.screenWidth * 0.03,
+        paddingVertical: sizes.screenHeight * 0.006,
+    },
     avatarWrap: {
         width: sizes.screenWidth * 0.14,
         height: sizes.screenWidth * 0.14,
-        borderRadius: sizes.screenWidth * 0.07,
+        borderRadius: sizes.screenWidth * 0.035,
         backgroundColor: colors.white,
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
     },
     avatarEditBadge: {
         position: 'absolute',
@@ -248,42 +294,20 @@ const styles = StyleSheet.create({
         paddingHorizontal: sizes.screenWidth * 0.04,
         paddingTop: sizes.screenHeight * 0.012,
         paddingBottom: sizes.screenHeight * 0.03,
-        gap: sizes.screenHeight * 0.014,
-    },
-    statsGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        rowGap: sizes.screenHeight * 0.012,
-    },
-    statCard: {
-        width: '48.2%',
-        backgroundColor: colors.white,
-        borderRadius: sizes.screenWidth * 0.03,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        paddingVertical: sizes.screenHeight * 0.012,
-        paddingHorizontal: sizes.screenWidth * 0.03,
-    },
-    statIconCircle: {
-        width: sizes.screenWidth * 0.07,
-        height: sizes.screenWidth * 0.07,
-        borderRadius: sizes.screenWidth * 0.02,
-        backgroundColor: '#EEF2FF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: sizes.screenHeight * 0.008,
-    },
-    statValue: {
-        marginBottom: 2,
+        gap: sizes.screenHeight * 0.012,
     },
     card: {
         backgroundColor: colors.white,
-        borderRadius: sizes.screenWidth * 0.04,
+        borderRadius: sizes.screenWidth * 0.05,
         borderWidth: 1,
         borderColor: '#E5E7EB',
         paddingHorizontal: sizes.screenWidth * 0.03,
         paddingVertical: sizes.screenHeight * 0.014,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+        elevation: 2,
     },
     cardHeader: {
         marginBottom: sizes.screenHeight * 0.01,
@@ -336,11 +360,18 @@ const styles = StyleSheet.create({
         lineHeight: 20,
     },
     contactRow: {
+        display: 'none',
+    },
+    contactCardRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: sizes.screenHeight * 0.01,
-        borderBottomWidth: 1,
-        borderBottomColor: '#EEF0F4',
+        paddingVertical: sizes.screenHeight * 0.008,
+        paddingHorizontal: sizes.screenWidth * 0.02,
+        borderRadius: sizes.screenWidth * 0.025,
+        backgroundColor: '#F7F8FB',
+        borderWidth: 1,
+        borderColor: '#ECEFF5',
+        marginTop: sizes.screenHeight * 0.008,
     },
     contactIconWrap: {
         width: sizes.screenWidth * 0.07,

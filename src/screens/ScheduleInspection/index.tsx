@@ -7,11 +7,44 @@ import {
   ScrollView,
   ViewStyle,
 } from 'react-native';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 import { Wrapper, AppText, AppHeader } from '../../components';
 import { colors, fontFamily, fontSize, sizes } from '../../services/utilities';
 import Icon from 'react-native-vector-icons/Feather';
 
 const QUICK_TIMES = ['9:00 AM', '11:00 AM', '1:00 PM', '3:00 PM', '5:00 PM'];
+
+const formatDateLabel = (date: Date) =>
+  date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+  });
+
+const formatTimeLabel = (date: Date) =>
+  date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+const buildTimeFromLabel = (timeLabel: string) => {
+  const [time, meridiem] = timeLabel.split(' ');
+  const [rawHours, rawMinutes] = time.split(':').map(Number);
+  const nextDate = new Date();
+  let hours = rawHours % 12;
+
+  if (meridiem === 'PM') {
+    hours += 12;
+  }
+
+  nextDate.setHours(hours, rawMinutes, 0, 0);
+
+  return nextDate;
+};
+
 const headerContainerStyle: ViewStyle = {
   paddingTop: sizes.screenHeight * 0.03,
   backgroundColor: colors.white,
@@ -22,11 +55,49 @@ const ScheduleInspection = ({ navigation }: any) => {
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [notes, setNotes] = useState('');
+  const [dateValue, setDateValue] = useState(new Date());
+  const [timeValue, setTimeValue] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   const handleConfirm = () => {
-    const date = selectedDate || '2026-01-23';
-    const time = selectedTime || '11:00';
+    const date = selectedDate || formatDateLabel(dateValue);
+    const time = selectedTime || formatTimeLabel(timeValue);
     navigation.navigate('InspectionScheduled', { date, time });
+  };
+
+  const handleSelectDate = (
+    _event: DateTimePickerEvent,
+    pickedDate?: Date,
+  ) => {
+    setShowDatePicker(false);
+
+    if (!pickedDate) {
+      return;
+    }
+
+    setDateValue(pickedDate);
+    setSelectedDate(formatDateLabel(pickedDate));
+  };
+
+  const handleSelectTime = (
+    _event: DateTimePickerEvent,
+    pickedTime?: Date,
+  ) => {
+    setShowTimePicker(false);
+
+    if (!pickedTime) {
+      return;
+    }
+
+    setTimeValue(pickedTime);
+    setSelectedTime(formatTimeLabel(pickedTime));
+  };
+
+  const handleQuickTimeSelect = (timeLabel: string) => {
+    const nextTime = buildTimeFromLabel(timeLabel);
+    setTimeValue(nextTime);
+    setSelectedTime(formatTimeLabel(nextTime));
   };
 
   return (
@@ -59,15 +130,17 @@ const ScheduleInspection = ({ navigation }: any) => {
           >
             Select Date
           </AppText>
-          <TouchableOpacity style={styles.inputBox} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.inputBox}
+            activeOpacity={0.8}
+            onPress={() => setShowDatePicker(true)}
+          >
             <TextInput
               style={styles.inputText}
-              placeholder=""
+              placeholder="Choose a date"
               value={selectedDate}
-              onChangeText={setSelectedDate}
               placeholderTextColor={colors.placeholderText}
               editable={false}
-              pointerEvents="none"
             />
             <Icon name="calendar" size={18} color={colors.placeholderText} />
           </TouchableOpacity>
@@ -83,15 +156,17 @@ const ScheduleInspection = ({ navigation }: any) => {
           >
             Select Time
           </AppText>
-          <TouchableOpacity style={styles.inputBox} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.inputBox}
+            activeOpacity={0.8}
+            onPress={() => setShowTimePicker(true)}
+          >
             <TextInput
               style={styles.inputText}
-              placeholder=""
+              placeholder="Choose a time"
               value={selectedTime}
-              onChangeText={setSelectedTime}
               placeholderTextColor={colors.placeholderText}
               editable={false}
-              pointerEvents="none"
             />
             <Icon name="clock" size={18} color={colors.placeholderText} />
           </TouchableOpacity>
@@ -112,7 +187,7 @@ const ScheduleInspection = ({ navigation }: any) => {
               <TouchableOpacity
                 key={time}
                 activeOpacity={0.8}
-                onPress={() => setSelectedTime(time)}
+                onPress={() => handleQuickTimeSelect(time)}
                 style={[
                   styles.timeChip,
                   selectedTime === time && styles.timeChipActive,
@@ -180,6 +255,25 @@ const ScheduleInspection = ({ navigation }: any) => {
           Super Admin will be notified in real-time
         </AppText>
       </ScrollView>
+
+      {showDatePicker ? (
+        <DateTimePicker
+          value={dateValue}
+          mode="date"
+          display="default"
+          minimumDate={new Date()}
+          onChange={handleSelectDate}
+        />
+      ) : null}
+
+      {showTimePicker ? (
+        <DateTimePicker
+          value={timeValue}
+          mode="time"
+          display="default"
+          onChange={handleSelectTime}
+        />
+      ) : null}
     </Wrapper>
   );
 };

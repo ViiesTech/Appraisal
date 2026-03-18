@@ -1,6 +1,9 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
+import {
+  createStackNavigator,
+  TransitionPresets,
+} from '@react-navigation/stack';
 
 // Screens
 import Signin from '../../../screens/Signin';
@@ -23,77 +26,91 @@ import EditProfile from '../../../screens/EditProfile';
 import Settings from '../../../screens/Settings';
 
 export type MainStackParamList = {
-    Onbording: undefined;
-    Signin: undefined;
-    Signup: undefined;
-    ForgotPassword: undefined;
-    ForgotPassVerify: { email: string };
-    ResetPassword: { email: string };
-    VerifyAccount: { email: string };
-    BottomTab: undefined;
-    TemplateLibrary: undefined;
-    AssignmentDetails: undefined;
-    ScheduleInspection: undefined;
-    InspectionScheduled: { date: string; time: string };
-    InspectionChecklist: undefined;
-    SubmitFinalReport: undefined;
-    EditProfile: undefined;
-    Settings: undefined;
+  Onbording: undefined;
+  Signin: undefined;
+  Signup: undefined;
+  ForgotPassword: undefined;
+  ForgotPassVerify: { email: string };
+  ResetPassword: { email: string };
+  VerifyAccount: { email: string };
+  BottomTab: undefined;
+  TemplateLibrary: undefined;
+  AssignmentDetails: undefined;
+  ScheduleInspection: undefined;
+  InspectionScheduled: { date: string; time: string };
+  InspectionChecklist: undefined;
+  SubmitFinalReport: undefined;
+  EditProfile: undefined;
+  Settings: undefined;
 };
 
 const Stack = createStackNavigator<MainStackParamList>();
 
-const MainNavigation = () => {
-    const authToken = useSelector(selectAuthToken);
-    console.log("navigation", authToken);
-
-    return (
-        <NavigationContainer>
-            {authToken ? <AppStack /> : <AuthStack />}
-        </NavigationContainer>
-    );
-};
+// Static UI mode helper:
+// 'auth' -> always show auth screens
+// 'app'  -> always show main app screens
+// 'auto' -> use token-based flow
+const STATIC_UI_MODE = 'auto' as 'auth' | 'app' | 'auto';
 
 const AuthStack = () => {
-    return (
-        <Stack.Navigator
-            initialRouteName="Onbording"
-            screenOptions={{
-                headerShown: false,
-                ...TransitionPresets.SlideFromRightIOS,
-            }}
-        >
-            <Stack.Screen name="Onbording" component={Onbording} />
-            <Stack.Screen name="Signin" component={Signin} />
-            <Stack.Screen name="Signup" component={Signup} />
-            <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
-            <Stack.Screen name="VerifyAccount" component={VerifyAccount} />
-            <Stack.Screen name="ForgotPassVerify" component={ForgotPassVerify} />
-            <Stack.Screen name="ResetPassword" component={ResetPassword} />
-        </Stack.Navigator>
-    );
+  return (
+    <Stack.Navigator
+      initialRouteName="Onbording"
+      screenOptions={{
+        headerShown: false,
+        ...TransitionPresets.SlideFromRightIOS,
+      }}
+    >
+      <Stack.Screen name="Onbording" component={Onbording} />
+      <Stack.Screen name="Signin" component={Signin} />
+      <Stack.Screen name="Signup" component={Signup} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+      <Stack.Screen name="VerifyAccount" component={VerifyAccount} />
+      <Stack.Screen name="ForgotPassVerify" component={ForgotPassVerify} />
+      <Stack.Screen name="ResetPassword" component={ResetPassword} />
+    </Stack.Navigator>
+  );
 };
 
 const AppStack = () => {
-    return (
-        <Stack.Navigator
-            initialRouteName="BottomTab"
-            screenOptions={{
-                headerShown: false,
-                ...TransitionPresets.SlideFromRightIOS,
-            }}
-        >
-            <Stack.Screen name="BottomTab" component={BottomTabNavigation} />
-            <Stack.Screen name="TemplateLibrary" component={TemplateLibrary} />
-                <Stack.Screen name="AssignmentDetails" component={AssignmentDetails} />
-                <Stack.Screen name="ScheduleInspection" component={ScheduleInspection} />
-                <Stack.Screen name="InspectionScheduled" component={InspectionScheduled} />
-                <Stack.Screen name="InspectionChecklist" component={InspectionChecklist} />
-                <Stack.Screen name="SubmitFinalReport" component={SubmitFinalReport} />
-                <Stack.Screen name="EditProfile" component={EditProfile} />
-                <Stack.Screen name="Settings" component={Settings} />
-        </Stack.Navigator>
-    );
+  return (
+    <Stack.Navigator
+      initialRouteName="BottomTab"
+      screenOptions={{
+        headerShown: false,
+        ...TransitionPresets.SlideFromRightIOS,
+      }}
+    >
+      <Stack.Screen name="BottomTab" component={BottomTabNavigation} />
+      <Stack.Screen name="TemplateLibrary" component={TemplateLibrary} />
+      <Stack.Screen name="AssignmentDetails" component={AssignmentDetails} />
+      <Stack.Screen name="ScheduleInspection" component={ScheduleInspection} />
+      <Stack.Screen
+        name="InspectionScheduled"
+        component={InspectionScheduled}
+      />
+      <Stack.Screen
+        name="InspectionChecklist"
+        component={InspectionChecklist}
+      />
+      <Stack.Screen name="SubmitFinalReport" component={SubmitFinalReport} />
+      <Stack.Screen name="EditProfile" component={EditProfile} />
+      <Stack.Screen name="Settings" component={Settings} />
+    </Stack.Navigator>
+  );
+};
+
+const MainNavigation = () => {
+  const authToken = useSelector(selectAuthToken);
+  const shouldShowApp =
+    STATIC_UI_MODE === 'app' ||
+    (STATIC_UI_MODE === 'auto' && Boolean(authToken));
+
+  return (
+    <NavigationContainer>
+      {shouldShowApp ? <AppStack /> : <AuthStack />}
+    </NavigationContainer>
+  );
 };
 
 export default MainNavigation;

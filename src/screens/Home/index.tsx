@@ -1,4 +1,3 @@
-import { View } from 'react-native';
 import {
   Wrapper,
   HomeHeader,

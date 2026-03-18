@@ -1,8 +1,27 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
-import { Wrapper, AppHeader, AppText, AppScrollView } from '../../components';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  TextInput,
+  Alert,
+} from 'react-native';
+import {
+  Wrapper,
+  AppHeader,
+  AppText,
+  AppScrollView,
+  ScreenFooterActions,
+} from '../../components';
 import { colors, fontFamily, fontSize, sizes } from '../../services/utilities';
 import Icon from 'react-native-vector-icons/Feather';
+import {
+  pick,
+  types,
+  isErrorWithCode,
+  errorCodes,
+} from '@react-native-documents/picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import type { ViewStyle } from 'react-native';
 
 const headerContainerStyle: ViewStyle = {
@@ -14,6 +33,73 @@ const headerContainerStyle: ViewStyle = {
 
 const SubmitFinalReport = () => {
   const [notes, setNotes] = useState('');
+  const [reportFileName, setReportFileName] = useState(
+    'Upload your report file',
+  );
+  const [reportFileMeta, setReportFileMeta] = useState(
+    'PDF, DOC, or DOCX (Max 10MB)',
+  );
+  const [selectedImagesCount, setSelectedImagesCount] = useState(0);
+
+  const formatBytes = (size?: number | null) => {
+    if (!size) {
+      return 'Unknown size';
+    }
+    const mb = size / (1024 * 1024);
+    return `${mb.toFixed(1)} MB`;
+  };
+
+  const handlePickReport = async () => {
+    try {
+      const [file] = await pick({
+        type: [types.pdf, types.doc, types.docx],
+        mode: 'open',
+      });
+
+      if (file) {
+        setReportFileName(file.name || 'Report file selected');
+        setReportFileMeta(formatBytes(file.size));
+      }
+    } catch (error) {
+      if (
+        isErrorWithCode(error) &&
+        error.code === errorCodes.OPERATION_CANCELED
+      ) {
+        return;
+      }
+      Alert.alert('Document Picker', 'Unable to pick report file');
+    }
+  };
+
+  const handlePickImages = async () => {
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        selectionLimit: 10,
+        quality: 0.8,
+      });
+
+      if (result.didCancel) {
+        return;
+      }
+
+      if (result.errorCode) {
+        Alert.alert(
+          'Image Picker',
+          result.errorMessage || 'Unable to pick images',
+        );
+        return;
+      }
+
+      const count = result.assets?.length || 0;
+      setSelectedImagesCount(count);
+    } catch {
+      Alert.alert(
+        'Image Picker',
+        'Something went wrong while selecting images',
+      );
+    }
+  };
 
   return (
     <Wrapper
@@ -60,22 +146,27 @@ const SubmitFinalReport = () => {
             Upload Report (PDF/DOC) *
           </AppText>
 
-          <TouchableOpacity activeOpacity={0.8} style={styles.uploadLargeBox}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.uploadLargeBox}
+            onPress={handlePickReport}
+          >
             <Icon name="upload" size={30} color={colors.placeholderText} />
             <AppText
               fontSize={fontSize.smallM}
               fontFamily={fontFamily.Regular}
               color={colors.textLighter}
               style={styles.uploadLabel}
+              numberOfLines={1}
             >
-              Upload your report file
+              {reportFileName}
             </AppText>
             <AppText
               fontSize={fontSize.small}
               fontFamily={fontFamily.Regular}
               color={colors.placeholderText}
             >
-              PDF, DOC, or DOCX (Max 10MB)
+              {reportFileMeta}
             </AppText>
           </TouchableOpacity>
         </View>
@@ -90,7 +181,11 @@ const SubmitFinalReport = () => {
             Attach Images (Optional)
           </AppText>
 
-          <TouchableOpacity activeOpacity={0.8} style={styles.uploadImageBtn}>
+          <TouchableOpacity
+            activeOpacity={0.8}
+            style={styles.uploadImageBtn}
+            onPress={handlePickImages}
+          >
             <Icon name="image" size={16} color={colors.placeholderText} />
             <AppText
               fontSize={fontSize.smallM}
@@ -98,7 +193,11 @@ const SubmitFinalReport = () => {
               color={colors.textLighter}
               style={styles.imageBtnText}
             >
-              Upload Images
+              {selectedImagesCount > 0
+                ? `${selectedImagesCount} image${
+                    selectedImagesCount > 1 ? 's' : ''
+                  } selected`
+                : 'Upload Images'}
             </AppText>
           </TouchableOpacity>
         </View>
@@ -126,26 +225,13 @@ const SubmitFinalReport = () => {
         </View>
       </AppScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.submitBtn} activeOpacity={0.85}>
-          <AppText
-            fontSize={fontSize.medium}
-            fontFamily={fontFamily.Bold}
-            color={colors.white}
-          >
-            Submit Final Report
-          </AppText>
-        </TouchableOpacity>
-
-        <AppText
-          fontSize={fontSize.small}
-          fontFamily={fontFamily.Regular}
-          color={colors.textLighter}
-          style={styles.footerHint}
-        >
-          Please ensure all information is accurate before submitting
-        </AppText>
-      </View>
+      <ScreenFooterActions
+        primaryLabel="Submit Final Report"
+        containerStyle={styles.footer}
+        primaryButtonStyle={styles.submitBtn}
+        helperText="Please ensure all information is accurate before submitting"
+        helperTextStyle={styles.footerHint}
+      />
     </Wrapper>
   );
 };
@@ -225,7 +311,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.smallM,
   },
   footer: {
-    backgroundColor: colors.AppBG,
+    backgroundColor: colors.white,
     paddingHorizontal: sizes.screenWidth * 0.04,
     paddingTop: sizes.screenHeight * 0.01,
     paddingBottom: sizes.screenHeight * 0.02,

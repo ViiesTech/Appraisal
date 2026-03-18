@@ -1,8 +1,15 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, TextInput } from 'react-native';
-import { Wrapper, AppHeader, AppText, AppScrollView } from '../../components';
+import { View, TouchableOpacity, StyleSheet, TextInput, Alert } from 'react-native';
+import {
+  Wrapper,
+  AppHeader,
+  AppText,
+  AppScrollView,
+  ScreenFooterActions,
+} from '../../components';
 import { colors, fontFamily, fontSize, sizes } from '../../services/utilities';
 import Icon from 'react-native-vector-icons/Feather';
+import { launchImageLibrary } from 'react-native-image-picker';
 import type { ViewStyle } from 'react-native';
 
 const headerContainerStyle: ViewStyle = {
@@ -17,6 +24,33 @@ const EditProfile = ({ navigation }: any) => {
   const [email, setEmail] = useState('john.anderson@example.com');
   const [phone, setPhone] = useState('+1 (555) 123-4567');
   const [location, setLocation] = useState('San Francisco, CA');
+  const [photoName, setPhotoName] = useState('Upload new photo');
+
+  const handlePickProfilePhoto = async () => {
+    try {
+      const result = await launchImageLibrary({
+        mediaType: 'photo',
+        selectionLimit: 1,
+        quality: 0.8,
+      });
+
+      if (result.didCancel) {
+        return;
+      }
+
+      if (result.errorCode) {
+        Alert.alert('Photo Picker', result.errorMessage || 'Failed to pick image');
+        return;
+      }
+
+      const selectedAsset = result.assets?.[0];
+      if (selectedAsset) {
+        setPhotoName(selectedAsset.fileName || 'Photo selected');
+      }
+    } catch {
+      Alert.alert('Photo Picker', 'Something went wrong while selecting photo');
+    }
+  };
 
   return (
     <Wrapper
@@ -44,7 +78,11 @@ const EditProfile = ({ navigation }: any) => {
           >
             Profile Photo
           </AppText>
-          <TouchableOpacity style={styles.uploadPhotoBox} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.uploadPhotoBox}
+            activeOpacity={0.8}
+            onPress={handlePickProfilePhoto}
+          >
             <View style={styles.photoIconWrap}>
               <Icon name="user" size={24} color={colors.blueNormal} />
             </View>
@@ -53,8 +91,9 @@ const EditProfile = ({ navigation }: any) => {
                 fontSize={fontSize.smallM}
                 fontFamily={fontFamily.Bold}
                 color={colors.textDark}
+                numberOfLines={1}
               >
-                Upload new photo
+                {photoName}
               </AppText>
               <AppText
                 fontSize={fontSize.small}
@@ -162,31 +201,15 @@ const EditProfile = ({ navigation }: any) => {
         </View>
       </AppScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.primaryBtn} activeOpacity={0.85} onPress={() => console.log('Save changes')}>
-          <AppText
-            fontSize={fontSize.medium}
-            fontFamily={fontFamily.Bold}
-            color={colors.white}
-          >
-            Save Changes
-          </AppText>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.secondaryBtn}
-          activeOpacity={0.85}
-          onPress={() => navigation.goBack()}
-        >
-          <AppText
-            fontSize={fontSize.medium}
-            fontFamily={fontFamily.Bold}
-            color={colors.textDark}
-          >
-            Cancel
-          </AppText>
-        </TouchableOpacity>
-      </View>
+      <ScreenFooterActions
+        primaryLabel="Save Changes"
+        onPrimaryPress={() => console.log('Save changes')}
+        secondaryLabel="Cancel"
+        onSecondaryPress={() => navigation.goBack()}
+        containerStyle={styles.footer}
+        primaryButtonStyle={styles.primaryBtn}
+        secondaryButtonStyle={styles.secondaryBtn}
+      />
     </Wrapper>
   );
 };

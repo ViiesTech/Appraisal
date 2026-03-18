@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View } from 'react-native';
 import { Wrapper, AppText, AppInput, Button, GoogleLoginButton, AppImage, AppKeyboardAvoidingView } from '../../components';
 import images from '../../services/utilities/images';
 import { colors } from '../../services/utilities/colors';
@@ -15,7 +15,7 @@ interface SigninErrors {
 }
 
 const Signin = ({ navigation }: any) => {
-    const dispatch = useDispatch()
+    const dispatch = useDispatch();
 
     const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
     const [email, setEmail] = useState<string>('');
@@ -62,10 +62,14 @@ const Signin = ({ navigation }: any) => {
     const handleLogin = () => {
         if (validate()) {
             console.log('Login successful!', { email, password });
-            const token = 'asdad4a54sa5d'
-            dispatch(setAuthToken(token))
+            const token = 'static-ui-auth-token';
+            dispatch(setAuthToken(token));
             // Proceed with login API
         }
+    };
+
+    const handleGoogleLogin = () => {
+        dispatch(setAuthToken('static-ui-google-auth-token'));
     };
 
     return (
@@ -148,7 +152,10 @@ const Signin = ({ navigation }: any) => {
                         </AppText>
                     </View>
 
-                    <GoogleLoginButton style={styles.googleButton} />
+                    <GoogleLoginButton
+                        style={styles.googleButton}
+                        onPress={handleGoogleLogin}
+                    />
                 </View>
             </AppKeyboardAvoidingView>
         </Wrapper>

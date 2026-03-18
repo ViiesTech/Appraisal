@@ -5,6 +5,8 @@ import { colors } from '../../services/utilities/colors';
 import { fontSize, fontFamily } from '../../services/utilities/fonts';
 import styles from './style';
 import Icon from 'react-native-vector-icons/Feather';
+import { useDispatch } from 'react-redux';
+import { setAuthToken } from '../../store/authSlice';
 
 interface SignupErrors {
     firstName: string;
@@ -15,6 +17,7 @@ interface SignupErrors {
 }
 
 const Signup = ({ navigation }: any) => {
+    const dispatch = useDispatch();
     const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
     const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState<boolean>(false);
 
@@ -96,7 +99,7 @@ const Signup = ({ navigation }: any) => {
                 email,
                 password
             });
-            navigation.navigate('VerifyAccount', { email });
+            dispatch(setAuthToken('static-ui-signup-auth-token'));
             // Proceed with Signup API
         }
     };

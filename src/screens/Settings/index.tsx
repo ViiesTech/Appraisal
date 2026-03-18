@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, StyleSheet, Switch } from 'react-native';
-import { Wrapper, AppHeader, AppText, AppScrollView } from '../../components';
+import {
+  Wrapper,
+  AppHeader,
+  AppText,
+  AppScrollView,
+  ScreenFooterActions,
+} from '../../components';
 import { colors, fontFamily, fontSize, sizes } from '../../services/utilities';
 import Icon from 'react-native-vector-icons/Feather';
 import type { ViewStyle } from 'react-native';
+import { useDispatch } from 'react-redux';
+import { removeAuthToken } from '../../store/authSlice';
 
 const headerContainerStyle: ViewStyle = {
   paddingTop: sizes.screenHeight * 0.03,
@@ -13,6 +21,7 @@ const headerContainerStyle: ViewStyle = {
 };
 
 const Settings = () => {
+  const dispatch = useDispatch();
   const [emailNotif, setEmailNotif] = useState(true);
   const [pushNotif, setPushNotif] = useState(true);
 
@@ -25,28 +34,41 @@ const Settings = () => {
       edges={['bottom', 'left', 'right']}
     >
       <AppHeader title="Settings" containerStyle={headerContainerStyle} />
-
       <AppScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.sectionBlock}>
+        <View style={styles.sectionCard}>
           <AppText style={styles.sectionHeading}>Account</AppText>
+          <View style={styles.sectionDivider} />
           <TouchableOpacity style={styles.rowCard} activeOpacity={0.8}>
             <View style={styles.rowLeft}>
-              <Icon name="lock" size={16} color={colors.blueNormal} />
+              <View style={styles.leadingIconWrap}>
+                <Icon name="lock" size={15} color={colors.blueNormal} />
+              </View>
               <AppText style={styles.rowTitle}>Change Password</AppText>
             </View>
-            <Icon name="chevron-right" size={18} color={colors.placeholderText} />
+            <Icon
+              name="chevron-right"
+              size={18}
+              color={colors.placeholderText}
+            />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.sectionBlock}>
+        <View style={styles.sectionCard}>
           <AppText style={styles.sectionHeading}>Notifications</AppText>
+          <View style={styles.sectionDivider} />
           <View style={styles.cardContainer}>
             <View style={styles.rowWithSwitch}>
               <View style={styles.rowLeft}>
-                <Icon name="bell" size={16} color={colors.blueNormal} />
+                <View style={styles.leadingIconWrap}>
+                  <Icon name="bell" size={15} color={colors.placeholderText} />
+                </View>
                 <View>
-                  <AppText style={styles.rowTitle}>Enable Notifications</AppText>
-                  <AppText style={styles.rowSub}>Receive all notifications</AppText>
+                  <AppText style={styles.rowTitle}>
+                    Enable Notifications
+                  </AppText>
+                  <AppText style={styles.rowSub}>
+                    Receive all notifications
+                  </AppText>
                 </View>
               </View>
               <Switch
@@ -61,7 +83,9 @@ const Settings = () => {
               <View style={styles.rowLeftIndented}>
                 <View>
                   <AppText style={styles.rowTitle}>Email Notifications</AppText>
-                  <AppText style={styles.rowSub}>Get notified via email</AppText>
+                  <AppText style={styles.rowSub}>
+                    Get notified via email
+                  </AppText>
                 </View>
               </View>
               <Switch
@@ -76,7 +100,9 @@ const Settings = () => {
               <View style={styles.rowLeftIndented}>
                 <View>
                   <AppText style={styles.rowTitle}>Push Notifications</AppText>
-                  <AppText style={styles.rowSub}>Get push alerts on your device</AppText>
+                  <AppText style={styles.rowSub}>
+                    Get push alerts on your device
+                  </AppText>
                 </View>
               </View>
               <Switch
@@ -89,11 +115,14 @@ const Settings = () => {
           </View>
         </View>
 
-        <View style={styles.sectionBlock}>
+        <View style={styles.sectionCard}>
           <AppText style={styles.sectionHeading}>Preferences</AppText>
+          <View style={styles.sectionDivider} />
           <View style={styles.rowCardDisabled}>
             <View style={styles.rowLeft}>
-              <Icon name="moon" size={16} color={colors.placeholderText} />
+              <View style={styles.leadingIconWrap}>
+                <Icon name="moon" size={15} color={colors.placeholderText} />
+              </View>
               <View>
                 <AppText style={styles.rowTitle}>Dark Mode</AppText>
                 <AppText style={styles.rowSub}>Coming soon</AppText>
@@ -109,12 +138,14 @@ const Settings = () => {
         </View>
       </AppScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.85}>
-          <Icon name="log-out" size={16} color={colors.error} />
-          <AppText style={styles.logoutText}>Logout</AppText>
-        </TouchableOpacity>
-      </View>
+      <ScreenFooterActions
+        primaryLabel="Logout"
+        primaryVariant="outline"
+        onPrimaryPress={() => dispatch(removeAuthToken())}
+        containerStyle={styles.footer}
+        primaryButtonStyle={styles.logoutBtn}
+        primaryTextStyle={styles.logoutText}
+      />
     </Wrapper>
   );
 };
@@ -132,38 +163,47 @@ const styles = StyleSheet.create({
     paddingBottom: sizes.screenHeight * 0.02,
     gap: sizes.screenHeight * 0.018,
   },
-  sectionBlock: {},
+  sectionCard: {
+    backgroundColor: colors.white,
+    borderRadius: sizes.screenWidth * 0.04,
+    borderWidth: 1,
+    borderColor: '#E8EAF0',
+    paddingHorizontal: sizes.screenWidth * 0.03,
+    paddingTop: sizes.screenHeight * 0.012,
+    paddingBottom: sizes.screenHeight * 0.01,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
   sectionHeading: {
     fontSize: fontSize.smallM,
     fontFamily: fontFamily.Bold,
     color: colors.textDark,
-    marginBottom: sizes.screenHeight * 0.01,
+    marginBottom: sizes.screenHeight * 0.008,
+  },
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#EEF0F4',
+    marginHorizontal: -sizes.screenWidth * 0.03,
+    marginBottom: sizes.screenHeight * 0.008,
   },
   cardContainer: {
-    backgroundColor: colors.white,
-    borderRadius: sizes.screenWidth * 0.035,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: sizes.screenWidth * 0.03,
+    paddingHorizontal: sizes.screenWidth * 0.01,
   },
   rowCard: {
-    backgroundColor: colors.white,
-    borderRadius: sizes.screenWidth * 0.035,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: 'transparent',
     minHeight: sizes.screenHeight * 0.068,
-    paddingHorizontal: sizes.screenWidth * 0.03,
+    paddingHorizontal: sizes.screenWidth * 0.006,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   rowCardDisabled: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: sizes.screenWidth * 0.035,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: 'transparent',
     minHeight: sizes.screenHeight * 0.068,
-    paddingHorizontal: sizes.screenWidth * 0.03,
+    paddingHorizontal: sizes.screenWidth * 0.006,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -185,8 +225,16 @@ const styles = StyleSheet.create({
   rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: sizes.screenWidth * 0.025,
+    gap: sizes.screenWidth * 0.02,
     flex: 1,
+  },
+  leadingIconWrap: {
+    width: sizes.screenWidth * 0.08,
+    height: sizes.screenWidth * 0.08,
+    borderRadius: sizes.screenWidth * 0.024,
+    backgroundColor: '#F3F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rowLeftIndented: {
     paddingLeft: sizes.screenWidth * 0.09,
@@ -194,7 +242,7 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     fontSize: fontSize.smallM,
-    fontFamily: fontFamily.Regular,
+    fontFamily: fontFamily.Medium,
     color: colors.textDark,
   },
   rowSub: {
@@ -205,8 +253,8 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingHorizontal: sizes.screenWidth * 0.04,
-    paddingBottom: sizes.screenHeight * 0.02,
-    paddingTop: sizes.screenHeight * 0.008,
+    paddingTop: sizes.screenHeight * 0.02,
+    paddingBottom: sizes.screenHeight * 0.05,
   },
   logoutBtn: {
     minHeight: sizes.screenHeight * 0.058,
@@ -214,10 +262,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F3B3B6',
     backgroundColor: '#FFF5F5',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: sizes.screenWidth * 0.02,
+    marginTop: sizes.screenHeight * 0.015,
   },
   logoutText: {
     fontSize: fontSize.smallM,

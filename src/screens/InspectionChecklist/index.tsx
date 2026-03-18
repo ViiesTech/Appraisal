@@ -1,6 +1,12 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { Wrapper, AppHeader, AppText, AppScrollView } from '../../components';
+import { View, StyleSheet } from 'react-native';
+import {
+  Wrapper,
+  AppHeader,
+  AppText,
+  AppScrollView,
+  ScreenFooterActions,
+} from '../../components';
 import { colors, fontFamily, fontSize, sizes } from '../../services/utilities';
 import Icon from 'react-native-vector-icons/Feather';
 import type { ViewStyle } from 'react-native';
@@ -143,26 +149,13 @@ const InspectionChecklist = () => {
         })}
       </AppScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.saveBtn} activeOpacity={0.85}>
-          <AppText
-            fontSize={fontSize.medium}
-            fontFamily={fontFamily.Bold}
-            color={colors.white}
-          >
-            Save & Resume Later
-          </AppText>
-        </TouchableOpacity>
-
-        <AppText
-          fontSize={fontSize.small}
-          fontFamily={fontFamily.Regular}
-          color={colors.textLighter}
-          style={styles.footerHint}
-        >
-          Your progress is automatically saved
-        </AppText>
-      </View>
+      <ScreenFooterActions
+        primaryLabel="Save & Resume Later"
+        containerStyle={styles.footer}
+        primaryButtonStyle={styles.saveBtn}
+        helperText="Your progress is automatically saved"
+        helperTextStyle={styles.footerHint}
+      />
     </Wrapper>
   );
 };

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { AppText } from '..';
 import Icon from 'react-native-vector-icons/Feather';
-import { colors, fontSize, fontFamily, sizes } from '../../services/utilities';
+import { colors, fontSize, fontFamily, sizes } from '../../utils';
 
 interface TaskCardProps {
   status: string;

@@ -1,6 +1,6 @@
 import { StyleSheet, View, ViewStyle, StyleProp, ImageBackground, ImageSourcePropType, ImageStyle, TouchableOpacity } from 'react-native';
-import { colors } from '../../services/utilities/colors';
-import { sizes } from '../../services/utilities';
+import { colors } from '../../utils/colors';
+import { sizes } from '../../utils';
 
 interface ShadowCardProps {
     children: React.ReactNode;

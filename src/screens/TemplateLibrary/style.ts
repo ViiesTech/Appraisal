@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, sizes } from '../../services/utilities';
+import { colors, sizes } from '../../utils';
 
 const styles = StyleSheet.create({
     container: {
@@ -22,6 +22,9 @@ const styles = StyleSheet.create({
         padding: sizes.screenWidth * 0.035,
         flexDirection: 'row',
         alignItems: 'flex-start',
+    },
+    templateCardEmpty: {
+        justifyContent: 'center',
     },
     fileIconWrap: {
         width: sizes.screenWidth * 0.1,

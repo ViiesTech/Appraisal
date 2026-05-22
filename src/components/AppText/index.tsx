@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Text as RNText, TextProps, TextStyle, TouchableOpacity } from 'react-native';
-import { colors } from '../../services/utilities/colors';
-import { fontSize as defaultFontSize , fontFamily as defaultFontFamily} from '../../services/utilities/fonts';
+import { colors } from '../../utils/colors';
+import { fontSize as defaultFontSize , fontFamily as defaultFontFamily} from '../../utils/fonts';
 
 // Create a type for the custom props extending default TextProps
 export interface AppTextProps extends TextProps {

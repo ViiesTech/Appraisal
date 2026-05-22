@@ -1,211 +1,239 @@
-import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  ViewStyle,
+  ScrollView,
+} from 'react-native';
 import {
   Wrapper,
   AppHeader,
   AppText,
   AppScrollView,
   ScreenFooterActions,
+  NotificationsSkeleton,
 } from '../../components';
-import { colors, fontFamily, fontSize, sizes } from '../../services/utilities';
+import { colors, fontFamily, fontSize, sizes } from '../../utils';
 import Icon from 'react-native-vector-icons/Feather';
+import moment from 'moment';
+import {
+  useGetNotificationsQuery,
+  useMarkAllNotificationsAsReadMutation,
+} from '../../redux/api/apiSlice';
+import { showToast } from '../../utils/toast';
 
 const headerContainerStyle: ViewStyle = {
   paddingTop: sizes.screenHeight * 0.03,
   backgroundColor: colors.white,
 };
 
-const NOTIFICATIONS = [
-  {
-    id: 1,
-    type: 'assignment',
-    icon: 'file-text',
-    title: 'New Assignment',
-    description: 'You have been assigned a new property at 1234 Oak Street',
-    time: '3 minutes ago',
-    unread: true,
-  },
-  {
-    id: 2,
-    type: 'reminder',
-    icon: 'calendar',
-    title: 'Inspection Reminder',
-    description: 'Inspection scheduled for 5678 Pine Avenue today at 2:00 PM',
-    time: '2 hours ago',
-    unread: true,
-  },
-  {
-    id: 3,
-    type: 'warning',
-    icon: 'alert-triangle',
-    title: 'Deadline Warning',
-    description: 'Report for 9012 Maple Drive is due in 2 days',
-    time: '5 hours ago',
-    unread: true,
-  },
-  {
-    id: 4,
-    type: 'update',
-    icon: 'file-text',
-    title: 'Template Updated',
-    description: 'Residential Property Appraisal template has been updated',
-    time: '1 day ago',
-    unread: false,
-  },
-  {
-    id: 5,
-    type: 'success',
-    icon: 'check-circle',
-    title: 'Report Submitted',
-    description:
-      'Your report for 3456 Elm Street has been successfully submitted',
-    time: '2 days ago',
-    unread: false,
-  },
-  {
-    id: 6,
-    type: 'pending',
-    icon: 'clock',
-    title: 'Pending Task',
-    description: 'You have 3 pending checklist items for 7890 Birch Road',
-    time: '3 days ago',
-    unread: false,
-  },
+type TabKey =
+  | 'all'
+  | 'unread'
+  | 'order'
+  | 'template'
+  | 'account'
+  | 'commentExample'
+  | 'system';
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'unread', label: 'Unread' },
+  { key: 'order', label: 'Order' },
+  { key: 'template', label: 'Template' },
+  { key: 'account', label: 'Account' },
+  { key: 'commentExample', label: 'Comment' },
+  { key: 'system', label: 'System' },
 ];
 
-const NOTIFICATION_TABS = ['All (6)', 'Unread (3)', 'Assignments', 'Reports'];
+const getNotificationIcon = (type: string): string => {
+  switch (type) {
+    case 'order':
+      return 'file-text';
+    case 'template':
+      return 'layout';
+    case 'account':
+      return 'user';
+    case 'commentExample':
+      return 'message-square';
+    case 'system':
+      return 'settings';
+    default:
+      return 'bell';
+  }
+};
+
+const buildQueryParams = (
+  tabKey: TabKey,
+): { isRead?: boolean; type?: string; page: number; limit: number } => {
+  if (tabKey === 'all') return { page: 1, limit: 20 };
+  if (tabKey === 'unread') return { isRead: false, page: 1, limit: 20 };
+  return { type: tabKey, page: 1, limit: 20 };
+};
 
 const Notifications = () => {
-  const [activeTab, setActiveTab] = useState('All (6)');
-  const [notifications, setNotifications] = useState(NOTIFICATIONS);
+  const [activeTab, setActiveTab] = useState<TabKey>('all');
 
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const queryParams = buildQueryParams(activeTab);
+  const { data, isLoading, isFetching } = useGetNotificationsQuery(queryParams);
+  const [markAllRead, { isLoading: isMarkingRead }] =
+    useMarkAllNotificationsAsReadMutation();
 
-  const getNotificationIconStyles = (unread: boolean) => ({
-    container: unread ? styles.unreadIconContainer : styles.readIconContainer,
-    color: unread ? colors.white : '#667085',
+  const notifications = useMemo(() => {
+    const list = data?.notifications ?? [];
+    if (activeTab === 'all') {
+      return [...list].sort((a, b) =>
+        a.isRead === b.isRead ? 0 : a.isRead ? 1 : -1,
+      );
+    }
+    return list;
+  }, [data, activeTab]);
+
+  const unreadCount = data?.unreadCount ?? 0;
+
+  const getIconStyles = (isRead: boolean) => ({
+    container: isRead ? styles.readIconContainer : styles.unreadIconContainer,
+    color: isRead ? '#667085' : colors.white,
   });
-
-  const filteredNotifications =
-    activeTab === 'Unread (3)'
-      ? notifications.filter(n => n.unread)
-      : activeTab === 'All (6)'
-      ? notifications
-      : notifications;
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prev => prev.map(item => ({ ...item, unread: false })));
-  };
 
   return (
     <Wrapper
       style={styles.container}
-      statusBarTranslucent={true}
-      statusBarHidden={true}
-      barStyle="light-content"
-      edges={['bottom', 'left', 'right']}
     >
       <AppHeader
         title="Notifications"
         hideBackButton
         containerStyle={headerContainerStyle}
         rightActionNode={
-          <View style={styles.newBadge}>
-            <AppText
-              fontSize={12}
-              fontFamily={fontFamily.Bold}
-              color={colors.white}
-            >
-              {unreadCount} New
-            </AppText>
-          </View>
+          unreadCount > 0 ? (
+            <View style={styles.newBadge}>
+              <AppText
+                fontSize={12}
+                fontFamily={fontFamily.Bold}
+                color={colors.white}
+              >
+                {unreadCount} New
+              </AppText>
+            </View>
+          ) : undefined
         }
         renderCustomTabs={
-          <View style={styles.tabsContainer}>
-            {NOTIFICATION_TABS.map(tab => (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabsContainer}
+          >
+            {TABS.map(tab => (
               <TouchableOpacity
-                key={tab}
+                key={tab.key}
                 style={[
                   styles.tabButton,
-                  activeTab === tab && styles.activeTabButton,
+                  activeTab === tab.key && styles.activeTabButton,
                 ]}
-                onPress={() => setActiveTab(tab)}
+                onPress={() => setActiveTab(tab.key)}
                 activeOpacity={0.7}
               >
                 <AppText
                   fontSize={fontSize.small}
                   fontFamily={
-                    activeTab === tab ? fontFamily.Bold : fontFamily.Regular
+                    activeTab === tab.key ? fontFamily.Bold : fontFamily.Regular
                   }
-                  color={activeTab === tab ? colors.white : colors.textLighter}
+                  color={
+                    activeTab === tab.key ? colors.white : colors.textLighter
+                  }
                 >
-                  {tab}
+                  {tab.label}
                 </AppText>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
         }
       />
 
-      <AppScrollView contentContainerStyle={styles.notificationsContent}>
-        {filteredNotifications.map(notification => {
-          const iconStyles = getNotificationIconStyles(notification.unread);
-
-          return (
-            <View
-              key={notification.id}
-              style={[
-                styles.notificationCard,
-                notification.unread && styles.unreadNotificationCard,
-              ]}
-            >
-              <View style={[styles.iconContainer, iconStyles.container]}>
-                <Icon
-                  name={notification.icon}
-                  size={16}
-                  color={iconStyles.color}
-                />
-              </View>
-
-              <View style={styles.notificationContent}>
-                <View style={styles.notificationHeader}>
-                  <AppText
-                    fontSize={fontSize.smallM}
-                    fontFamily={fontFamily.Bold}
-                    color={colors.textDark}
-                  >
-                    {notification.title}
-                  </AppText>
-                  {notification.unread && <View style={styles.unreadDot} />}
+      {isLoading || isFetching ? (
+        <AppScrollView contentContainerStyle={styles.notificationsContent}>
+          <NotificationsSkeleton />
+        </AppScrollView>
+      ) : notifications.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Icon name="bell-off" size={36} color={colors.borderLight} />
+          <AppText
+            fontFamily={fontFamily.Bold}
+            color={colors.textLighter}
+            style={styles.emptyText}
+          >
+            No notifications
+          </AppText>
+        </View>
+      ) : (
+        <AppScrollView contentContainerStyle={styles.notificationsContent}>
+          {notifications.map(item => {
+            const iconStyles = getIconStyles(item.isRead);
+            return (
+              <View
+                key={item._id}
+                style={[
+                  styles.notificationCard,
+                  !item.isRead && styles.unreadNotificationCard,
+                ]}
+              >
+                <View style={[styles.iconContainer, iconStyles.container]}>
+                  <Icon
+                    name={getNotificationIcon(item.type)}
+                    size={16}
+                    color={iconStyles.color}
+                  />
                 </View>
 
-                <AppText
-                  fontSize={fontSize.small}
-                  fontFamily={fontFamily.Regular}
-                  color={colors.textLighter}
-                  numberOfLines={2}
-                >
-                  {notification.description}
-                </AppText>
+                <View style={styles.notificationContent}>
+                  <View style={styles.notificationHeader}>
+                    <AppText
+                      fontSize={fontSize.smallM}
+                      fontFamily={fontFamily.Bold}
+                      color={colors.textDark}
+                    >
+                      {item.title}
+                    </AppText>
+                    {!item.isRead && <View style={styles.unreadDot} />}
+                  </View>
 
-                <AppText
-                  fontSize={fontSize.small}
-                  fontFamily={fontFamily.Regular}
-                  color={colors.placeholderText}
-                  style={styles.timeText}
-                >
-                  {notification.time}
-                </AppText>
+                  <AppText
+                    fontSize={fontSize.small}
+                    fontFamily={fontFamily.Regular}
+                    color={colors.textLighter}
+                    numberOfLines={2}
+                  >
+                    {item.message}
+                  </AppText>
+
+                  <AppText
+                    fontSize={fontSize.small}
+                    fontFamily={fontFamily.Regular}
+                    color={colors.placeholderText}
+                    style={styles.timeText}
+                  >
+                    {moment(item.createdAt).fromNow()}
+                  </AppText>
+                </View>
               </View>
-            </View>
-          );
-        })}
-      </AppScrollView>
+            );
+          })}
+        </AppScrollView>
+      )}
 
       <ScreenFooterActions
         primaryLabel="Mark All as Read"
-        onPrimaryPress={handleMarkAllAsRead}
+        onPrimaryPress={async () => {
+          try {
+            await markAllRead().unwrap();
+            showToast('success', 'All notifications marked as read');
+          } catch {
+            showToast('error', 'Failed to mark notifications as read');
+          }
+        }}
         primaryVariant="outline"
+        isLoading={isMarkingRead}
         containerStyle={styles.footer}
         primaryButtonStyle={styles.markAllBtn}
         primaryTextStyle={styles.markAllBtnText}
@@ -228,8 +256,6 @@ const styles = StyleSheet.create({
     paddingVertical: sizes.screenHeight * 0.006,
   },
   tabsContainer: {
-    flexDirection: 'row',
-    // paddingHorizontal: sizes.screenWidth * 0.04,
     paddingBottom: sizes.screenHeight * 0.012,
     gap: sizes.screenWidth * 0.02,
   },
@@ -295,9 +321,6 @@ const styles = StyleSheet.create({
   timeText: {
     marginTop: sizes.screenHeight * 0.004,
   },
-  trailingIcon: {
-    marginTop: sizes.screenHeight * 0.008,
-  },
   footer: {
     backgroundColor: colors.white,
     paddingTop: sizes.screenHeight * 0.02,
@@ -312,5 +335,13 @@ const styles = StyleSheet.create({
     color: '#111928',
     fontFamily: fontFamily.Regular,
     fontSize: fontSize.smallM,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    marginTop: sizes.screenHeight * 0.015,
   },
 });

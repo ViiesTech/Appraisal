@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import ShadowCard from '../ShadowCard';
-import images from '../../services/utilities/images';
-import { colors, fontFamily, fontSize, sizes } from '../../services/utilities';
+import images from '../../utils/images';
+import { colors, fontFamily, fontSize, sizes } from '../../utils';
 import AppText from '../AppText';
 import Icon from 'react-native-vector-icons/Feather';
 

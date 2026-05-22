@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, fontSize, fontFamily, sizes } from '../../services/utilities';
+import { colors, fontSize, fontFamily, sizes } from '../../utils';
 
 const styles = StyleSheet.create({
     container: {
@@ -64,7 +64,12 @@ const styles = StyleSheet.create({
         lineHeight: 18,
     },
     listHeader: {
-        // marginTop: sizes.screenHeight * 0.03,
+        marginBottom: sizes.screenHeight * 0.015,
+    },
+    listHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: sizes.screenHeight * 0.015,
     },
     certItem: {
@@ -97,15 +102,31 @@ const styles = StyleSheet.create({
         padding: 5,
     },
     emptyContainer: {
-        paddingVertical: sizes.screenWidth * 0.02,
+        paddingVertical: sizes.screenWidth * 0.05,
         alignItems: 'center',
     },
     listContent: {
         gap: sizes.screenWidth * 0.03
     },
-    flatList: {
-        maxHeight: sizes.screenHeight * 0.3
-    }
+    stagedContainer: {
+        marginBottom: sizes.screenHeight * 0.02,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        borderRadius: sizes.cardRadius,
+        padding: sizes.screenWidth * 0.04,
+    },
+    uploadBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.blueNormal,
+        paddingVertical: sizes.screenHeight * 0.014,
+        borderRadius: sizes.screenWidth * 0.06,
+        marginTop: sizes.screenHeight * 0.015,
+    },
+    uploadBtnDisabled: {
+        opacity: 0.6,
+    },
 });
 
 export default styles;

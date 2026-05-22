@@ -2,11 +2,11 @@ import React from 'react';
 import { View } from 'react-native';
 import { ShadowCard, AppText } from '..';
 import Icon from 'react-native-vector-icons/Feather';
-import { colors, fontSize, fontFamily } from '../../services/utilities';
+import { colors, fontSize, fontFamily } from '../../utils';
 import styles from './style';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { MainStackParamList } from '../../services/config/navigation';
+import { MainStackParamList } from '../../navigation';
 
 const TemplateLibraryCard = () => {
     const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();

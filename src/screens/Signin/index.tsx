@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { Wrapper, AppText, AppInput, Button, GoogleLoginButton, AppImage, AppKeyboardAvoidingView } from '../../components';
-import images from '../../services/utilities/images';
-import { colors } from '../../services/utilities/colors';
-import { fontSize, fontFamily } from '../../services/utilities/fonts';
+import images from '../../utils/images';
+import { colors } from '../../utils/colors';
+import { fontSize, fontFamily } from '../../utils/fonts';
 import styles from './style';
 import Icon from 'react-native-vector-icons/Feather';
 import { useDispatch } from 'react-redux';
-import { setAuthToken } from '../../store/authSlice';
+import { setCredentials } from '../../redux/slices/authSlice';
+import { useLoginMutation, useGoogleLoginMutation } from '../../redux/api/apiSlice';
+import { handleGoogleSigninFlow } from '../../utils/googleAuth';
+import { showToast } from '../../utils/toast';
+import getFCMToken from '../../utils/getFCMToken';
 
 interface SigninErrors {
     email: string;
@@ -16,8 +20,11 @@ interface SigninErrors {
 
 const Signin = ({ navigation }: any) => {
     const dispatch = useDispatch();
+    const [login, { isLoading }] = useLoginMutation();
+    const [googleLogin] = useGoogleLoginMutation();
 
     const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
+    const [isGoogleLoading, setIsGoogleLoading] = useState<boolean>(false);
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [errors, setErrors] = useState<SigninErrors>({
@@ -59,17 +66,48 @@ const Signin = ({ navigation }: any) => {
         return true;
     };
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         if (validate()) {
-            console.log('Login successful!', { email, password });
-            const token = 'static-ui-auth-token';
-            dispatch(setAuthToken(token));
-            // Proceed with login API
+            try {
+                const fcmToken = await getFCMToken();
+                const body: Record<string, string> = { email, password };
+                if (fcmToken) {
+                    body.fcmToken = fcmToken;
+                }
+                const result = await login(body).unwrap();
+                if (result.success) {
+                    if (result.appraiser?.isVerified === false) {
+                        showToast('success', 'Verify Account', result.message || 'Please verify your email.');
+                        navigation.navigate('VerifyAccount', { email, flow: 'signup' });
+                    } else {
+                        console.log('reessponse',result)
+                        showToast('success', 'Success', 'Login successful!');
+                        dispatch(setCredentials({ token: result.token, user: result.appraiser }));
+                    }
+                } else {
+                    showToast('error', 'Login Failed', result.message);
+                    console.log('Login error:', result.message);
+                }
+            } catch (err: any) {
+                console.log('Login failed:', err);
+                const errorMsg = err?.data?.message || 'Invalid email or password';
+                showToast('error', 'Login Failed', errorMsg);
+                setErrors(prev => ({ ...prev, password: errorMsg }));
+            }
         }
     };
 
-    const handleGoogleLogin = () => {
-        dispatch(setAuthToken('static-ui-google-auth-token'));
+    const handleGoogleLogin = async () => {
+        setIsGoogleLoading(true);
+        const result = await handleGoogleSigninFlow(
+            (data) => googleLogin(data).unwrap(),
+            dispatch,
+            setCredentials,
+        );
+        setIsGoogleLoading(false);
+        if (!result.success) {
+            showToast('error', 'Google Login Failed', 'Could not sign in with Google');
+        }
     };
 
     return (
@@ -144,6 +182,7 @@ const Signin = ({ navigation }: any) => {
                         variant="dark"
                         style={styles.loginButton}
                         onPress={handleLogin}
+                        isLoading={isLoading}
                     />
 
                     <View style={styles.divider}>
@@ -155,6 +194,7 @@ const Signin = ({ navigation }: any) => {
                     <GoogleLoginButton
                         style={styles.googleButton}
                         onPress={handleGoogleLogin}
+                        isLoading={isGoogleLoading}
                     />
                 </View>
             </AppKeyboardAvoidingView>

@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { sizes, colors } from '../../services/utilities';
+import { sizes, colors } from '../../utils';
 
 const styles = StyleSheet.create({
   container: {
@@ -8,7 +8,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingHorizontal: sizes.screenWidth * 0.05,
-    paddingTop: sizes.screenHeight * 0.02,
     paddingBottom: sizes.screenHeight * 0.010,
   },
   headerRow: {

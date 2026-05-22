@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Wrapper, AppText } from '../../components';
-import { colors, fontFamily, fontSize, sizes } from '../../services/utilities';
+import { colors, fontFamily, fontSize, sizes } from '../../utils';
 import Icon from 'react-native-vector-icons/Feather';
 
 const InspectionScheduled = ({ navigation, route }: any) => {
@@ -10,10 +10,7 @@ const InspectionScheduled = ({ navigation, route }: any) => {
   return (
     <Wrapper
       style={styles.container}
-      statusBarTranslucent={false}
-      statusBarHidden={false}
       barStyle="dark-content"
-      edges={['bottom', 'left', 'right']}
     >
       <View style={styles.content}>
         {/* ── Check Icon ── */}
@@ -71,7 +68,7 @@ const InspectionScheduled = ({ navigation, route }: any) => {
         <TouchableOpacity
           style={styles.backBtn}
           activeOpacity={0.85}
-          onPress={() => navigation.navigate('BottomTab', { screen: 'Tasks' })}
+          onPress={() => navigation.navigate('BottomTab', { screen: 'Home' })}
         >
           <AppText
             fontSize={fontSize.medium}

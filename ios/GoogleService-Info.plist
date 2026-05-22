@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>563987431295-lt3u4gnvfsiis37arsunspkbg2jniifi.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.563987431295-lt3u4gnvfsiis37arsunspkbg2jniifi</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>563987431295-264re69cpl9cbf5drcdavhi2309u5e6o.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDlH_-jH03Y_mUa_T8vpmMQWGO5WyydYQg</string>
+	<key>GCM_SENDER_ID</key>
+	<string>563987431295</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.realestateappraisal.app</string>
+	<key>PROJECT_ID</key>
+	<string>appraisal-61daf</string>
+	<key>STORAGE_BUCKET</key>
+	<string>appraisal-61daf.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:563987431295:ios:3e32b1eb45f7348a00e44a</string>
+</dict>
+</plist>

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { View } from 'react-native';
 import { Wrapper, AppText, AppInput, Button, AppKeyboardAvoidingView, AuthHeader } from '../../components';
-import { colors } from '../../services/utilities/colors';
-import { fontSize, fontFamily } from '../../services/utilities/fonts';
+import { colors } from '../../utils/colors';
+import { fontSize, fontFamily } from '../../utils/fonts';
 import styles from './style';
 import Icon from 'react-native-vector-icons/Feather';
+import { useResetPasswordMutation } from '../../redux/api/apiSlice';
+import { showToast } from '../../utils/toast';
 
 const ResetPassword = ({ route, navigation }: any) => {
     const { email } = route.params || { email: 'user@example.com' };
@@ -14,6 +16,8 @@ const ResetPassword = ({ route, navigation }: any) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
     const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState<boolean>(false);
     const [errors, setErrors] = useState({ password: '', confirmPassword: '' });
+
+    const [resetPassword, { isLoading }] = useResetPasswordMutation();
 
     const validateInputs = () => {
         let passErr = '';
@@ -45,14 +49,24 @@ const ResetPassword = ({ route, navigation }: any) => {
         return true;
     };
 
-    const handleReset = () => {
+    const handleReset = async () => {
         if (validateInputs()) {
-            console.log('Resetting password for:', email);
-            navigation.reset({
-                index: 0,
-                routes: [{ name: 'Signin' }],
-            });
-            // Add reset password API call logic here
+            try {
+                const result = await resetPassword({ email, password }).unwrap();
+                if (result.success) {
+                    showToast('success', 'Password Reset', result.message);
+                    navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'Signin' }],
+                    });
+                } else {
+                    showToast('error', 'Reset Failed', result.message);
+                }
+            } catch (err: any) {
+                const errorMsg = err?.data?.message || 'Failed to reset password';
+                showToast('error', 'Reset Failed', errorMsg);
+                setErrors(prev => ({ ...prev, password: errorMsg }));
+            }
         }
     };
 
@@ -125,6 +139,7 @@ const ResetPassword = ({ route, navigation }: any) => {
                         variant="dark"
                         style={styles.resetButton}
                         onPress={handleReset}
+                        isLoading={isLoading}
                     />
                 </View>
             </AppKeyboardAvoidingView>

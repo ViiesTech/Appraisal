@@ -8,159 +8,79 @@ import {
   AppScrollView,
   ShadowCard,
 } from '../../components';
-import { colors, fontFamily, fontSize, sizes } from '../../services/utilities';
+import { colors, fontFamily, fontSize, sizes } from '../../utils';
 import { Calendar } from 'react-native-calendars';
 import Icon from 'react-native-vector-icons/Feather';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import moment from 'moment';
+import { useGetOrdersQuery } from '../../redux/api/apiSlice';
+import { useNavigation } from '@react-navigation/native';
 
 const headerContainerStyle: ViewStyle = {
   paddingTop: sizes.screenHeight * 0.03,
 };
 
-const SCHEDULE_ITEMS = [
-  {
-    id: 1,
-    date: 'Jan 21',
-    time: '10:00 AM',
-    address: '1234 Oak Street, San Francisco',
-    type: 'Residential',
-    company: 'ABC Real Estate',
-  },
-  {
-    id: 2,
-    date: 'Jan 21',
-    time: '2:00 PM',
-    address: '5678 Pine Avenue, Los Angeles',
-    type: 'Commercial',
-    company: 'XYZ Corp',
-  },
-  {
-    id: 3,
-    date: 'Jan 23',
-    time: '11:00 AM',
-    address: '9012 Maple Drive, San Diego',
-    type: 'Residential',
-    company: 'First Bank',
-  },
-  {
-    id: 4,
-    date: 'Jan 25',
-    time: '3:00 PM',
-    address: '3456 Elm Street, Sacramento',
-    type: 'Multi-Family',
-    company: 'Global Appraisals',
-  },
-  {
-    id: 5,
-    date: 'Jan 28',
-    time: '9:00 AM',
-    address: '7890 Birch Road, Oakland',
-    type: 'Commercial',
-    company: 'Metro Bank',
-  },
-];
-
-const TODAY_SCHEDULE = [
-  {
-    id: 1,
-    dayLabel: 'Today',
-    time: '10:00 AM',
-    address: '1234 Oak Street, San Francisco',
-    type: 'Residential',
-    company: '•  ABC Real Estate',
-  },
-  {
-    id: 2,
-    dayLabel: 'Today',
-    time: '2:00 PM',
-    address: '5678 Pine Avenue, Los Angeles',
-    type: 'Commercial',
-    company: '•  XYZ Corp',
-  },
-];
-
 const Schedule = () => {
   const [activeTab, setActiveTab] = useState('Month View');
-  const [selected, setSelected] = useState('2026-01-21');
+  const [selected, setSelected] = useState(moment().format('YYYY-MM-DD'));
+  const navigation = useNavigation<any>();
+
+  const { data, isLoading } = useGetOrdersQuery({
+    status: 'scheduled',
+    thisWeek: true,
+    getMonthSchedule: true,
+    limit: 100,
+  });
+
+  const allOrders = data?.orders ?? [];
+  const thisWeekOrders = data?.thisWeekOrders ?? [];
+  const scheduledDates = data?.scheduledDates ?? [];
+  const thisWeekRange = data?.thisWeekRange ?? '';
+
+  // Parse "09-May-2026" → "2026-05-09" for calendar marking
+  const parsedScheduledDates = scheduledDates.map(d =>
+    moment(d, 'DD-MMM-YYYY').format('YYYY-MM-DD'),
+  );
+
+  // Orders for selected date (month view)
+  const selectedDateOrders = allOrders.filter(order => {
+    const scheduledAt = order.timeline?.scheduledAt;
+    return scheduledAt && moment(scheduledAt).format('YYYY-MM-DD') === selected;
+  });
+
+  // Build markedDates for calendar
+  const markedDates: any = {};
+  parsedScheduledDates.forEach(dateStr => {
+    markedDates[dateStr] = {
+      customStyles: {
+        container: {
+          backgroundColor: '#F6F7FB',
+          borderWidth: 1,
+          borderColor: '#DDE2EB',
+          borderRadius: 6,
+        },
+        text: { color: colors.textDark, fontFamily: fontFamily.Regular },
+      },
+    };
+  });
+  // Selected date overrides
+  markedDates[selected] = {
+    customStyles: {
+      container: { backgroundColor: colors.blueNormal, borderRadius: 6 },
+      text: { color: colors.white, fontFamily: fontFamily.Bold },
+    },
+  };
 
   const getTypeChipStyle = (type: string) => {
     if (type === 'Multi-Family') {
-      return {
-        backgroundColor: '#EEF2FF',
-        color: '#4F46E5',
-      };
+      return { backgroundColor: '#EEF2FF', color: '#4F46E5' };
     }
-
-    return {
-      backgroundColor: '#EAF1FF',
-      color: '#2F5EBB',
-    };
-  };
-
-  const markedDates: any = {
-    '2026-01-23': {
-      customStyles: {
-        container: {
-          backgroundColor: '#F6F7FB',
-          borderWidth: 1,
-          borderColor: '#DDE2EB',
-          borderRadius: 6,
-        },
-        text: {
-          color: colors.textDark,
-          fontFamily: fontFamily.Regular,
-        },
-      },
-    },
-    '2026-01-25': {
-      customStyles: {
-        container: {
-          backgroundColor: '#F6F7FB',
-          borderWidth: 1,
-          borderColor: '#DDE2EB',
-          borderRadius: 6,
-        },
-        text: {
-          color: colors.textDark,
-          fontFamily: fontFamily.Regular,
-        },
-      },
-    },
-    '2026-01-28': {
-      customStyles: {
-        container: {
-          backgroundColor: '#F6F7FB',
-          borderWidth: 1,
-          borderColor: '#DDE2EB',
-          borderRadius: 6,
-        },
-        text: {
-          color: colors.textDark,
-          fontFamily: fontFamily.Regular,
-        },
-      },
-    },
-    [selected]: {
-      customStyles: {
-        container: {
-          backgroundColor: colors.blueNormal,
-          borderRadius: 6,
-        },
-        text: {
-          color: colors.white,
-          fontFamily: fontFamily.Bold,
-        },
-      },
-    },
+    return { backgroundColor: '#EAF1FF', color: '#2F5EBB' };
   };
 
   return (
     <Wrapper
       style={styles.container}
-      statusBarTranslucent={true}
-      statusBarHidden={true}
-      barStyle="light-content"
-      edges={['bottom', 'left', 'right']}
     >
       <AppHeader
         title="Schedule"
@@ -171,38 +91,28 @@ const Schedule = () => {
         renderCustomTabs={
           <View style={styles.tabsWrapper}>
             <TouchableOpacity
-              style={[
-                styles.tab,
-                activeTab === 'Month View' && styles.activeTab,
-              ]}
+              style={[styles.tab, activeTab === 'Month View' && styles.activeTab]}
               onPress={() => setActiveTab('Month View')}
               activeOpacity={0.7}
             >
               <AppText
                 fontSize={fontSize.smallM}
                 fontFamily={fontFamily.Bold}
-                color={
-                  activeTab === 'Month View'
-                    ? colors.blueNormal
-                    : colors.textLighter
-                }
+                color={activeTab === 'Month View' ? colors.blueNormal : colors.textLighter}
               >
                 Month View
               </AppText>
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={[
-                styles.tab,
-                activeTab === 'List View' && styles.activeTab,
-              ]}
+              style={[styles.tab, activeTab === 'List View' && styles.activeTab]}
               onPress={() => setActiveTab('List View')}
               activeOpacity={0.7}
             >
               <AppText
                 fontSize={fontSize.smallM}
                 fontFamily={fontFamily.Bold}
-                color={activeTab === 'List View' ? colors.textDark : '#7E8696'}
+                color={activeTab === 'List View' ? colors.blueNormal : colors.textLighter}
               >
                 List View
               </AppText>
@@ -213,18 +123,17 @@ const Schedule = () => {
 
       {activeTab === 'Month View' ? (
         <AppScrollView contentContainerStyle={styles.monthViewContent}>
+          {/* ── Calendar ── */}
           <ShadowCard style={styles.calendarCardShadow}>
             <View style={styles.calendarContainer}>
               <Calendar
-                current={'2026-01-21'}
+                current={selected}
                 markingType="custom"
                 markedDates={markedDates}
                 onDayPress={day => setSelected(day.dateString)}
                 renderArrow={direction => (
                   <Icon
-                    name={
-                      direction === 'left' ? 'chevron-left' : 'chevron-right'
-                    }
+                    name={direction === 'left' ? 'chevron-left' : 'chevron-right'}
                     size={16}
                     color={colors.textDark}
                   />
@@ -255,243 +164,201 @@ const Schedule = () => {
             </View>
           </ShadowCard>
 
+          {/* ── Selected Date Schedule ── */}
           <ShadowCard style={styles.sectionCardShadow}>
             <View style={styles.sectionCard}>
               <View style={styles.sectionHeaderRow}>
                 <View style={styles.sectionHeaderLeft}>
                   <Icon name="calendar" size={14} color={colors.blueNormal} />
-                  <AppText
-                    fontSize={fontSize.smallM}
-                    fontFamily={fontFamily.Bold}
-                    color="#101928"
-                  >
-                    Today's Schedule
+                  <AppText fontSize={fontSize.smallM} fontFamily={fontFamily.Bold} color="#101928">
+                    {moment(selected).isSame(moment(), 'day') ? "Today's Schedule" : moment(selected).format('MMM D, YYYY')}
                   </AppText>
                 </View>
-                <AppText
-                  fontSize={fontSize.small}
-                  fontFamily={fontFamily.Regular}
-                  color={'#6A7283'}
-                >
-                  Jan 21, 2026
+                <AppText fontSize={fontSize.small} fontFamily={fontFamily.Regular} color={'#6A7283'}>
+                  {moment(selected).format('MMM D, YYYY')}
                 </AppText>
               </View>
 
-              {TODAY_SCHEDULE.map(item => (
-                <View key={item.id} style={styles.todayCardShadow}>
-                  <View style={styles.todayCard}>
-                    <View style={styles.timeBadge}>
-                      <AppText
-                        fontSize={12}
-                        fontFamily={fontFamily.Regular}
-                        color={colors.white}
-                      >
-                        {item.dayLabel}
-                      </AppText>
-                      <AppText
-                        fontSize={12}
-                        fontFamily={fontFamily.Bold}
-                        color={colors.white}
-                      >
-                        {item.time}
-                      </AppText>
-                    </View>
-
-                    <View style={styles.todayContent}>
-                      <View
-                        style={{
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 5,
-                        }}
-                      >
-                        <Ionicons
-                          name="location-outline"
-                          size={16}
-                          color={colors.textDark}
-                        />
-                        <AppText
-                          fontSize={fontSize.smallM}
-                          fontFamily={fontFamily.Bold}
-                          color="#101928"
-                        >
-                          {item.address}
+              {isLoading ? (
+                <AppText fontSize={fontSize.small} fontFamily={fontFamily.Regular} color={colors.textLighter}>
+                  Loading...
+                </AppText>
+              ) : selectedDateOrders.length === 0 ? (
+                <AppText fontSize={fontSize.small} fontFamily={fontFamily.Regular} color={colors.textLighter}>
+                  No inspections scheduled for this date.
+                </AppText>
+              ) : (
+                selectedDateOrders.map(item => (
+                  <TouchableOpacity
+                    key={item._id}
+                    activeOpacity={0.8}
+                    onPress={() => navigation.navigate('AssignmentDetails', { orderId: item._id })}
+                  >
+                    <View style={styles.todayCard}>
+                      <View style={styles.timeBadge}>
+                        <AppText fontSize={12} fontFamily={fontFamily.Regular} color={colors.white}>
+                          {moment(selected).isSame(moment(), 'day') ? 'Today' : moment(selected).format('MMM D')}
+                        </AppText>
+                        <AppText fontSize={12} fontFamily={fontFamily.Bold} color={colors.white}>
+                          {item.timeline?.scheduledAt ? moment(item.timeline.scheduledAt).format('h:mm A') : 'TBD'}
                         </AppText>
                       </View>
-                      <View style={styles.metaRow}>
-                        <AppText
-                          fontSize={fontSize.small}
-                          fontFamily={fontFamily.Regular}
-                          color={colors.textLighter}
-                        >
-                          {item.type}
-                        </AppText>
-                        <AppText
-                          fontSize={fontSize.small}
-                          fontFamily={fontFamily.Regular}
-                          color={colors.textLighter}
-                        >
-                          {item.company}
-                        </AppText>
-                      </View>
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </ShadowCard>
-
-          <ShadowCard style={styles.sectionCardShadow}>
-            <View style={styles.sectionCard}>
-              <AppText
-                fontSize={fontSize.smallM}
-                fontFamily={fontFamily.Bold}
-                color={colors.textDark}
-                style={styles.upcomingTitle}
-              >
-                Upcoming This Week
-              </AppText>
-
-              {SCHEDULE_ITEMS.slice(2).map(item => {
-                const [month, day] = item.date.split(' ');
-
-                return (
-                  <View key={item.id} style={styles.upcomingCardShadow}>
-                    <View style={styles.upcomingRow}>
-                      <View style={styles.dateBadge}>
-                        <AppText
-                          fontSize={10}
-                          fontFamily={fontFamily.Regular}
-                          color={'#364153'}
-                        >
-                          {month}
-                        </AppText>
-                        <AppText
-                          fontSize={fontSize.smallM}
-                          fontFamily={fontFamily.Bold}
-                          color="#364153"
-                        >
-                          {day}
-                        </AppText>
-                      </View>
-
-                      <View style={styles.upcomingContent}>
-                        <AppText
-                          fontSize={fontSize.smallM}
-                          fontFamily={fontFamily.Bold}
-                          color="#101928"
-                        >
-                          {item.address}
-                        </AppText>
-                        <View style={styles.timeRow}>
-                          <Icon
-                            name="clock"
-                            size={12}
-                            color={colors.textLighter}
-                          />
-                          <AppText
-                            fontSize={fontSize.small}
-                            fontFamily={fontFamily.Regular}
-                            color={colors.textLighter}
-                          >
-                            {item.time}
+                      <View style={styles.todayContent}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <Ionicons name="location-outline" size={16} color={colors.textDark} />
+                          <AppText fontSize={fontSize.smallM} fontFamily={fontFamily.Bold} color="#101928">
+                            {item.property?.address ?? '—'}
+                          </AppText>
+                        </View>
+                        <View style={styles.metaRow}>
+                          <AppText fontSize={fontSize.small} fontFamily={fontFamily.Regular} color={colors.textLighter}>
+                            {item.property?.type ?? '—'}
+                          </AppText>
+                          <AppText fontSize={fontSize.small} fontFamily={fontFamily.Regular} color={colors.textLighter}>
+                            {'•  '}{item.lender?.companyName ?? '—'}
                           </AppText>
                         </View>
                       </View>
                     </View>
-                  </View>
-                );
-              })}
+                  </TouchableOpacity>
+                ))
+              )}
             </View>
           </ShadowCard>
-        </AppScrollView>
-      ) : (
-        <AppScrollView contentContainerStyle={styles.listViewContent}>
-          {SCHEDULE_ITEMS.map(item => (
-            <ShadowCard key={item.id} style={styles.listCardShadow}>
-              <View style={styles.listCard}>
-                <View
-                  style={[
-                    styles.listDateBadge,
-                    item.id <= 2 && styles.listDateBadgeActive,
-                  ]}
+
+          {/* ── This Week ── */}
+          {thisWeekOrders.length > 0 && (
+            <ShadowCard style={styles.sectionCardShadow}>
+              <View style={styles.sectionCard}>
+                <AppText
+                  fontSize={fontSize.smallM}
+                  fontFamily={fontFamily.Bold}
+                  color={colors.textDark}
+                  style={styles.upcomingTitle}
                 >
-                  <AppText
-                    fontSize={10}
-                    fontFamily={fontFamily.Regular}
-                    color={item.id <= 2 ? colors.white : '#8D95A6'}
-                  >
-                    Jan
-                  </AppText>
-                  <AppText
-                    fontSize={fontSize.smallM}
-                    fontFamily={fontFamily.Bold}
-                    color={item.id <= 2 ? colors.white : colors.textDark}
-                  >
-                    {item.date.split(' ')[1]}
-                  </AppText>
-                </View>
+                  {thisWeekRange ? `This Week (${thisWeekRange})` : 'Upcoming This Week'}
+                </AppText>
 
-                <View style={styles.listContent}>
-                  <View style={styles.listTopRow}>
-                    <View style={styles.addressRow}>
-                      <Icon
-                        name="map-pin"
-                        size={12}
-                        color={colors.blueNormal}
-                      />
-                      <AppText
-                        fontSize={fontSize.smallM}
-                        fontFamily={fontFamily.Bold}
-                        color={colors.textDark}
-                      >
-                        {item.address}
-                      </AppText>
-                    </View>
-                    <Icon name="check-circle" size={14} color={'#C3C8D4'} />
-                  </View>
-
-                  <View style={styles.timeRow}>
-                    <Icon name="clock" size={12} color={'#4A5565'} />
-                    <AppText
-                      fontSize={fontSize.small}
-                      fontFamily={fontFamily.Regular}
-                      color={'#4A5565'}
+                {thisWeekOrders.map(item => {
+                  const scheduledAt = item.timeline?.scheduledAt;
+                  const month = scheduledAt ? moment(scheduledAt).format('MMM') : '—';
+                  const day = scheduledAt ? moment(scheduledAt).format('D') : '—';
+                  return (
+                    <TouchableOpacity
+                      key={item._id}
+                      activeOpacity={0.8}
+                      onPress={() => navigation.navigate('AssignmentDetails', { orderId: item._id })}
                     >
-                      {item.time}
-                    </AppText>
-                  </View>
-
-                  <View style={styles.metaRow}>
-                    <View
-                      style={[
-                        styles.typeChip,
-                        {
-                          backgroundColor: getTypeChipStyle(item.type)
-                            .backgroundColor,
-                        },
-                      ]}
-                    >
-                      <AppText
-                        fontSize={fontSize.small}
-                        fontFamily={fontFamily.Regular}
-                        color={getTypeChipStyle(item.type).color}
-                      >
-                        {item.type}
-                      </AppText>
-                    </View>
-                    <AppText
-                      fontSize={fontSize.small}
-                      fontFamily={fontFamily.Regular}
-                      color={'#8D95A6'}
-                    >
-                      {item.company}
-                    </AppText>
-                  </View>
-                </View>
+                      <View style={styles.upcomingRow}>
+                        <View style={styles.dateBadge}>
+                          <AppText fontSize={10} fontFamily={fontFamily.Regular} color={'#364153'}>{month}</AppText>
+                          <AppText fontSize={fontSize.smallM} fontFamily={fontFamily.Bold} color="#364153">{day}</AppText>
+                        </View>
+                        <View style={styles.upcomingContent}>
+                          <AppText fontSize={fontSize.smallM} fontFamily={fontFamily.Bold} color="#101928">
+                            {item.property?.address ?? '—'}
+                          </AppText>
+                          <View style={styles.timeRow}>
+                            <Icon name="clock" size={12} color={colors.textLighter} />
+                            <AppText fontSize={fontSize.small} fontFamily={fontFamily.Regular} color={colors.textLighter}>
+                              {scheduledAt ? moment(scheduledAt).format('h:mm A') : 'TBD'}
+                            </AppText>
+                          </View>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </ShadowCard>
-          ))}
+          )}
+        </AppScrollView>
+      ) : (
+        /* ── List View ── */
+        <AppScrollView contentContainerStyle={styles.listViewContent}>
+          {isLoading ? (
+            <AppText fontSize={fontSize.small} fontFamily={fontFamily.Regular} color={colors.textLighter}>
+              Loading...
+            </AppText>
+          ) : allOrders.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <View style={styles.emptyIconWrapper}>
+                <Icon name="calendar" size={36} color={colors.blueNormal} />
+              </View>
+              <AppText
+                fontSize={fontSize.h6}
+                fontFamily={fontFamily.Bold}
+                color={colors.textDark}
+                style={styles.emptyTitle}
+              >
+                No Inspections Scheduled
+              </AppText>
+              <AppText
+                fontSize={fontSize.smallM}
+                fontFamily={fontFamily.Regular}
+                color={'#8D95A6'}
+                style={styles.emptySubtitle}
+              >
+                You have no scheduled inspections at the moment. Check back later or switch to Month View to explore upcoming dates.
+              </AppText>
+            </View>
+          ) : (
+            allOrders.map(item => {
+              const scheduledAt = item.timeline?.scheduledAt;
+              const isToday = scheduledAt ? moment(scheduledAt).isSame(moment(), 'day') : false;
+              const isPast = scheduledAt ? moment(scheduledAt).isBefore(moment(), 'day') : false;
+              return (
+                <TouchableOpacity
+                  key={item._id}
+                  activeOpacity={0.8}
+                  onPress={() => navigation.navigate('AssignmentDetails', { orderId: item._id })}
+                >
+                  <ShadowCard style={styles.listCardShadow}>
+                    <View style={styles.listCard}>
+                      <View style={[styles.listDateBadge, (isToday || isPast) && styles.listDateBadgeActive]}>
+                        <AppText fontSize={10} fontFamily={fontFamily.Regular} color={(isToday || isPast) ? colors.white : '#8D95A6'}>
+                          {scheduledAt ? moment(scheduledAt).format('MMM') : '—'}
+                        </AppText>
+                        <AppText fontSize={fontSize.smallM} fontFamily={fontFamily.Bold} color={(isToday || isPast) ? colors.white : colors.textDark}>
+                          {scheduledAt ? moment(scheduledAt).format('D') : '—'}
+                        </AppText>
+                      </View>
+
+                      <View style={styles.listContent}>
+                        <View style={styles.listTopRow}>
+                          <View style={styles.addressRow}>
+                            <Icon name="map-pin" size={12} color={colors.blueNormal} />
+                            <AppText fontSize={fontSize.smallM} fontFamily={fontFamily.Bold} color={colors.textDark}>
+                              {item.property?.address ?? '—'}
+                            </AppText>
+                          </View>
+                          <Icon name="check-circle" size={14} color={'#C3C8D4'} />
+                        </View>
+
+                        <View style={styles.timeRow}>
+                          <Icon name="clock" size={12} color={'#4A5565'} />
+                          <AppText fontSize={fontSize.small} fontFamily={fontFamily.Regular} color={'#4A5565'}>
+                            {scheduledAt ? moment(scheduledAt).format('h:mm A') : 'TBD'}
+                          </AppText>
+                        </View>
+
+                        <View style={styles.metaRow}>
+                          <View style={[styles.typeChip, { backgroundColor: getTypeChipStyle(item.property?.type ?? '').backgroundColor }]}>
+                            <AppText fontSize={fontSize.small} fontFamily={fontFamily.Regular} color={getTypeChipStyle(item.property?.type ?? '').color}>
+                              {item.property?.type ?? '—'}
+                            </AppText>
+                          </View>
+                          <AppText fontSize={fontSize.small} fontFamily={fontFamily.Regular} color={'#8D95A6'}>
+                            {item.lender?.companyName ?? '—'}
+                          </AppText>
+                        </View>
+                      </View>
+                    </View>
+                  </ShadowCard>
+                </TouchableOpacity>
+              );
+            })
+          )}
         </AppScrollView>
       )}
     </Wrapper>
@@ -512,7 +379,7 @@ const styles = StyleSheet.create({
     marginBottom: sizes.screenHeight * 0.012,
     borderRadius: sizes.screenWidth * 0.03,
     padding: 5,
-    backgroundColor: colors.white,
+    backgroundColor: '#E8ECF4',
     gap: 0,
   },
   tab: {
@@ -662,6 +529,31 @@ const styles = StyleSheet.create({
   upcomingContent: {
     flex: 1,
     gap: sizes.screenHeight * 0.004,
+  },
+  emptyContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: sizes.screenHeight * 0.1,
+    paddingHorizontal: sizes.screenWidth * 0.06,
+    gap: sizes.screenHeight * 0.014,
+  },
+  emptyIconWrapper: {
+    width: sizes.screenWidth * 0.22,
+    height: sizes.screenWidth * 0.22,
+    borderRadius: sizes.screenWidth * 0.11,
+    backgroundColor: '#EAF1FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: sizes.screenHeight * 0.006,
+  },
+  emptyTitle: {
+    textAlign: 'center',
+    marginTop: sizes.screenHeight * 0.004,
+  },
+  emptySubtitle: {
+    textAlign: 'center',
+    lineHeight: 20,
   },
   listCard: {
     backgroundColor: colors.white,

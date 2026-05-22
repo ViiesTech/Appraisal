@@ -1,34 +1,19 @@
-import React, { useState } from 'react';
-import { View, FlatList, TouchableOpacity, LayoutChangeEvent } from 'react-native';
-import { ShadowCard, AppText } from '..';
+import React, { useMemo } from 'react';
+import { View, FlatList, TouchableOpacity } from 'react-native';
+import { ShadowCard, AppText, TodayScheduleInnerSkeleton } from '..';
 import Icon from 'react-native-vector-icons/Feather';
-import { colors, fontSize, fontFamily } from '../../services/utilities';
+import { colors, fontSize, fontFamily } from '../../utils';
 import { useNavigation } from '@react-navigation/native';
 import styles from './style';
+import moment from 'moment';
+import { useGetOrdersQuery } from '../../redux/api/apiSlice';
 
-const DUMMY_DATA = [
-    {
-        id: '1',
-        time: '10:00 AM',
-        address: '1234 Oak Street, Sa',
-        type: 'Residential',
-        company: 'ABC Real Estate',
-    },
-    {
-        id: '2',
-        time: '2:00 PM',
-        address: '5678 Pine Avenue, l',
-        type: 'Commercial',
-        company: 'XYZ Corp',
-    },
-    {
-        id: '3',
-        time: '4:00 PM',
-        address: '1234 Oak Street, Sa',
-        type: 'Commercial',
-        company: 'WXY Corp',
-    },
-];
+const getScheduledTime = (order: any): string => {
+    if (order.timeline?.scheduledAt) {
+        return moment(order.timeline.scheduledAt).format('h:mm A');
+    }
+    return 'TBD';
+};
 
 interface TodayScheduleProps {
     date?: string;
@@ -37,7 +22,10 @@ interface TodayScheduleProps {
 
 const TodaySchedule = ({ date, onPress }: TodayScheduleProps) => {
     const navigation = useNavigation<any>();
-    const [itemHeight, setItemHeight] = useState(0);
+
+    const todayISO = useMemo(() => moment().startOf('day').toISOString(), []);
+    const { data, isLoading, isFetching } = useGetOrdersQuery({ status: 'scheduled', date: todayISO });
+    const orders = data?.orders ?? [];
 
     const handleViewAll = () => {
         if (onPress) {
@@ -47,9 +35,8 @@ const TodaySchedule = ({ date, onPress }: TodayScheduleProps) => {
         }
     };
 
-    const renderItem = ({ item, index }: { item: typeof DUMMY_DATA[0], index: number }) => (
-        <View
-            style={styles.itemContainer}>
+    const renderItem = ({ item }: { item: typeof orders[0] }) => (
+        <TouchableOpacity activeOpacity={0.7} onPress={() => navigation.navigate('AssignmentDetails', { orderId: item._id })} style={styles.itemContainer}>
             <View style={styles.timeBox}>
                 <AppText
                     fontSize={fontSize.smallM}
@@ -63,7 +50,7 @@ const TodaySchedule = ({ date, onPress }: TodayScheduleProps) => {
                     fontFamily={fontFamily.Bold}
                     color={colors.white}
                 >
-                    {item.time}
+                    {getScheduledTime(item)}
                 </AppText>
             </View>
 
@@ -77,7 +64,7 @@ const TodaySchedule = ({ date, onPress }: TodayScheduleProps) => {
                         numberOfLines={1}
                         style={styles.addressText}
                     >
-                        {item.address}
+                        {item.property?.address ?? '—'}
                     </AppText>
                 </View>
 
@@ -88,7 +75,7 @@ const TodaySchedule = ({ date, onPress }: TodayScheduleProps) => {
                             fontFamily={fontFamily.Regular}
                             color={colors.textLighter}
                         >
-                            {item.type}
+                            {item.property?.type ?? '—'}
                         </AppText>
                     </View>
                     <View style={styles.dot} />
@@ -98,11 +85,11 @@ const TodaySchedule = ({ date, onPress }: TodayScheduleProps) => {
                         color={colors.textLighter}
                         numberOfLines={1}
                     >
-                        {item.company}
+                        {item.lender?.companyName ?? '—'}
                     </AppText>
                 </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
     return (
         <ShadowCard style={styles.container}>
@@ -133,25 +120,29 @@ const TodaySchedule = ({ date, onPress }: TodayScheduleProps) => {
                 </TouchableOpacity>
             </View>
 
-            <FlatList
-                data={DUMMY_DATA.slice(0, 2)}
-                renderItem={renderItem}
-                showsVerticalScrollIndicator={false}
-                keyExtractor={(item) => item.id}
-                scrollEnabled={false}
-                style={styles.flatList}
-                contentContainerStyle={styles.listContent}
-                ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <AppText
-                            fontFamily={fontFamily.Bold}
-                            color={colors.textLighter}
-                        >
-                            No schedule for today
-                        </AppText>
-                    </View>
-                }
-            />
+            {isLoading || isFetching ? (
+                <TodayScheduleInnerSkeleton />
+            ) : (
+                <FlatList
+                    data={orders.slice(0, 2)}
+                    renderItem={renderItem}
+                    showsVerticalScrollIndicator={false}
+                    keyExtractor={(item) => item._id}
+                    scrollEnabled={false}
+                    style={styles.flatList}
+                    contentContainerStyle={styles.listContent}
+                    ListEmptyComponent={
+                        <View style={styles.emptyContainer}>
+                            <AppText
+                                fontFamily={fontFamily.Bold}
+                                color={colors.textLighter}
+                            >
+                                No schedule for today
+                            </AppText>
+                        </View>
+                    }
+                />
+            )}
         </ShadowCard>
     );
 };

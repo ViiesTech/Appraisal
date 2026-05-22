@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -6,13 +6,22 @@ import {
   StyleSheet,
   ScrollView,
   ViewStyle,
+  Modal,
+  Pressable,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { Wrapper, AppText, AppHeader } from '../../components';
-import { colors, fontFamily, fontSize, sizes } from '../../services/utilities';
+import { colors, fontFamily, fontSize, sizes } from '../../utils';
 import Icon from 'react-native-vector-icons/Feather';
+
+import moment from 'moment';
+import { useScheduleInspectionMutation } from '../../redux/api/apiSlice';
+import { showToast } from '../../utils/toast';
+import { ActivityIndicator } from 'react-native';
 
 const QUICK_TIMES = ['9:00 AM', '11:00 AM', '1:00 PM', '3:00 PM', '5:00 PM'];
 
@@ -51,7 +60,10 @@ const headerContainerStyle: ViewStyle = {
   borderBottomWidth: 1,
   borderBottomColor: '#E5E6EB',
 };
-const ScheduleInspection = ({ navigation }: any) => {
+const ScheduleInspection = ({ navigation, route }: any) => {
+  const { orderId } = route.params ?? {};
+  const [scheduleInspection, { isLoading }] = useScheduleInspectionMutation();
+
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
   const [notes, setNotes] = useState('');
@@ -59,39 +71,102 @@ const ScheduleInspection = ({ navigation }: any) => {
   const [timeValue, setTimeValue] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [tempDateValue, setTempDateValue] = useState(new Date());
+  const [tempTimeValue, setTempTimeValue] = useState(new Date());
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  const handleConfirm = () => {
-    const date = selectedDate || formatDateLabel(dateValue);
-    const time = selectedTime || formatTimeLabel(timeValue);
-    navigation.navigate('InspectionScheduled', { date, time });
+  const handleConfirm = async () => {
+    if (!selectedDate) {
+      showToast('error', 'Validation Error', 'Please select a date');
+      return;
+    }
+    if (!selectedTime) {
+      showToast('error', 'Validation Error', 'Please select a time');
+      return;
+    }
+    if (!notes.trim()) {
+      showToast('error', 'Validation Error', 'Please add schedule notes');
+      return;
+    }
+
+    try {
+      // Combine date and time using moment
+      const scheduledAt = moment(dateValue)
+        .set({
+          hour: timeValue.getHours(),
+          minute: timeValue.getMinutes(),
+          second: 0,
+          millisecond: 0,
+        })
+        .toISOString();
+
+      const payload = {
+        orderId,
+        scheduledAt,
+        scheduleNotes: notes,
+      };
+      console.log('Scheduling Inspection with payload:', payload);
+
+      const result = await scheduleInspection(payload).unwrap();
+
+      console.log('Schedule Inspection Result:', result);
+
+      if (result.success) {
+        showToast(
+          'success',
+          'Success',
+          result.message || 'Inspection scheduled successfully',
+        );
+        navigation.navigate('InspectionScheduled', {
+          date: selectedDate,
+          time: selectedTime,
+        });
+      }
+    } catch (error: any) {
+      showToast(
+        'error',
+        'Error',
+        error?.data?.message || 'Failed to schedule inspection',
+      );
+    }
   };
 
-  const handleSelectDate = (
-    _event: DateTimePickerEvent,
-    pickedDate?: Date,
-  ) => {
+  const handleSelectDate = (_event: DateTimePickerEvent, pickedDate?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (!pickedDate) return;
+    if (Platform.OS === 'android') {
+      setDateValue(pickedDate);
+      setSelectedDate(formatDateLabel(pickedDate));
+    } else {
+      setTempDateValue(pickedDate);
+    }
+  };
+
+  const confirmIOSDate = () => {
+    setDateValue(tempDateValue);
+    setSelectedDate(formatDateLabel(tempDateValue));
     setShowDatePicker(false);
-
-    if (!pickedDate) {
-      return;
-    }
-
-    setDateValue(pickedDate);
-    setSelectedDate(formatDateLabel(pickedDate));
   };
 
-  const handleSelectTime = (
-    _event: DateTimePickerEvent,
-    pickedTime?: Date,
-  ) => {
-    setShowTimePicker(false);
-
-    if (!pickedTime) {
-      return;
+  const handleSelectTime = (_event: DateTimePickerEvent, pickedTime?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowTimePicker(false);
     }
+    if (!pickedTime) return;
+    if (Platform.OS === 'android') {
+      setTimeValue(pickedTime);
+      setSelectedTime(formatTimeLabel(pickedTime));
+    } else {
+      setTempTimeValue(pickedTime);
+    }
+  };
 
-    setTimeValue(pickedTime);
-    setSelectedTime(formatTimeLabel(pickedTime));
+  const confirmIOSTime = () => {
+    setTimeValue(tempTimeValue);
+    setSelectedTime(formatTimeLabel(tempTimeValue));
+    setShowTimePicker(false);
   };
 
   const handleQuickTimeSelect = (timeLabel: string) => {
@@ -103,10 +178,6 @@ const ScheduleInspection = ({ navigation }: any) => {
   return (
     <Wrapper
       style={styles.container}
-      statusBarTranslucent={true}
-      statusBarHidden={true}
-      barStyle="light-content"
-      edges={['bottom', 'left', 'right']}
     >
       <AppHeader
         title="Schedule Inspection"
@@ -114,7 +185,12 @@ const ScheduleInspection = ({ navigation }: any) => {
         containerStyle={headerContainerStyle}
       />
 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+      >
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -128,12 +204,15 @@ const ScheduleInspection = ({ navigation }: any) => {
             color={colors.textDark}
             style={styles.fieldLabel}
           >
-            Select Date
+            Select Date *
           </AppText>
           <TouchableOpacity
             style={styles.inputBox}
             activeOpacity={0.8}
-            onPress={() => setShowDatePicker(true)}
+            onPress={() => {
+              setTempDateValue(dateValue);
+              setShowDatePicker(true);
+            }}
           >
             <TextInput
               style={styles.inputText}
@@ -141,6 +220,7 @@ const ScheduleInspection = ({ navigation }: any) => {
               value={selectedDate}
               placeholderTextColor={colors.placeholderText}
               editable={false}
+              pointerEvents="none"
             />
             <Icon name="calendar" size={18} color={colors.placeholderText} />
           </TouchableOpacity>
@@ -154,12 +234,15 @@ const ScheduleInspection = ({ navigation }: any) => {
             color={colors.textDark}
             style={styles.fieldLabel}
           >
-            Select Time
+            Select Time *
           </AppText>
           <TouchableOpacity
             style={styles.inputBox}
             activeOpacity={0.8}
-            onPress={() => setShowTimePicker(true)}
+            onPress={() => {
+              setTempTimeValue(timeValue);
+              setShowTimePicker(true);
+            }}
           >
             <TextInput
               style={styles.inputText}
@@ -167,6 +250,7 @@ const ScheduleInspection = ({ navigation }: any) => {
               value={selectedTime}
               placeholderTextColor={colors.placeholderText}
               editable={false}
+              pointerEvents="none"
             />
             <Icon name="clock" size={18} color={colors.placeholderText} />
           </TouchableOpacity>
@@ -217,7 +301,7 @@ const ScheduleInspection = ({ navigation }: any) => {
             color={colors.textDark}
             style={styles.fieldLabel}
           >
-            Additional Notes (Optional)
+            Additional Notes *
           </AppText>
           <TextInput
             style={styles.notesInput}
@@ -228,22 +312,33 @@ const ScheduleInspection = ({ navigation }: any) => {
             textAlignVertical="top"
             value={notes}
             onChangeText={setNotes}
+            onFocus={() =>
+              setTimeout(
+                () => scrollViewRef.current?.scrollToEnd({ animated: true }),
+                150,
+              )
+            }
           />
         </View>
 
         {/* ── Confirm Button ── */}
         <TouchableOpacity
-          style={styles.confirmBtn}
+          style={[styles.confirmBtn, isLoading && { opacity: 0.7 }]}
           activeOpacity={0.85}
           onPress={handleConfirm}
+          disabled={isLoading}
         >
-          <AppText
-            fontSize={fontSize.medium}
-            fontFamily={fontFamily.Bold}
-            color={colors.white}
-          >
-            Confirm Schedule
-          </AppText>
+          {isLoading ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <AppText
+              fontSize={fontSize.medium}
+              fontFamily={fontFamily.Bold}
+              color={colors.white}
+            >
+              Confirm Schedule
+            </AppText>
+          )}
         </TouchableOpacity>
 
         <AppText
@@ -255,8 +350,53 @@ const ScheduleInspection = ({ navigation }: any) => {
           Super Admin will be notified in real-time
         </AppText>
       </ScrollView>
+      </KeyboardAvoidingView>
 
-      {showDatePicker ? (
+      {/* ── Date Picker ── */}
+      {Platform.OS === 'ios' ? (
+        <Modal
+          visible={showDatePicker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowDatePicker(false)}
+        >
+          <Pressable
+            style={styles.pickerOverlay}
+            onPress={() => setShowDatePicker(false)}
+          />
+          <View style={styles.pickerSheet}>
+            <View style={styles.pickerToolbar}>
+              <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                <AppText
+                  fontSize={fontSize.smallM}
+                  fontFamily={fontFamily.Regular}
+                  color={colors.textLighter}
+                >
+                  Cancel
+                </AppText>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={confirmIOSDate}>
+                <AppText
+                  fontSize={fontSize.smallM}
+                  fontFamily={fontFamily.Bold}
+                  color={colors.blueNormal}
+                >
+                  Done
+                </AppText>
+              </TouchableOpacity>
+            </View>
+            <DateTimePicker
+              value={tempDateValue}
+              mode="date"
+              display="spinner"
+              themeVariant='light'
+              minimumDate={new Date()}
+              onChange={handleSelectDate}
+              style={styles.iosPicker}
+            />
+          </View>
+        </Modal>
+      ) : showDatePicker ? (
         <DateTimePicker
           value={dateValue}
           mode="date"
@@ -266,11 +406,55 @@ const ScheduleInspection = ({ navigation }: any) => {
         />
       ) : null}
 
-      {showTimePicker ? (
+      {/* ── Time Picker ── */}
+      {Platform.OS === 'ios' ? (
+        <Modal
+          visible={showTimePicker}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowTimePicker(false)}
+        >
+          <Pressable
+            style={styles.pickerOverlay}
+            onPress={() => setShowTimePicker(false)}
+          />
+          <View style={styles.pickerSheet}>
+            <View style={styles.pickerToolbar}>
+              <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                <AppText
+                  fontSize={fontSize.smallM}
+                  fontFamily={fontFamily.Regular}
+                  color={colors.textLighter}
+                >
+                  Cancel
+                </AppText>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={confirmIOSTime}>
+                <AppText
+                  fontSize={fontSize.smallM}
+                  fontFamily={fontFamily.Bold}
+                  color={colors.blueNormal}
+                >
+                  Done
+                </AppText>
+              </TouchableOpacity>
+            </View>
+            <DateTimePicker
+              value={tempTimeValue}
+              mode="time"
+              themeVariant="light"
+              display="spinner"
+              onChange={handleSelectTime}
+              style={styles.iosPicker}
+            />
+          </View>
+        </Modal>
+      ) : showTimePicker ? (
         <DateTimePicker
           value={timeValue}
           mode="time"
           display="default"
+          themeVariant="light"
           onChange={handleSelectTime}
         />
       ) : null}
@@ -306,10 +490,14 @@ const styles = StyleSheet.create({
   backBtnPlaceholder: {
     width: sizes.screenWidth * 0.09,
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: sizes.screenWidth * 0.05,
     paddingTop: sizes.screenHeight * 0.025,
     paddingBottom: sizes.screenHeight * 0.04,
@@ -377,5 +565,27 @@ const styles = StyleSheet.create({
   noticeText: {
     textAlign: 'center',
     marginTop: sizes.screenHeight * 0.012,
+  },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  pickerSheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: sizes.screenWidth * 0.05,
+    borderTopRightRadius: sizes.screenWidth * 0.05,
+    paddingBottom: sizes.screenHeight * 0.03,
+  },
+  pickerToolbar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: sizes.screenWidth * 0.05,
+    paddingVertical: sizes.screenHeight * 0.016,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  iosPicker: {
+    width: '100%',
   },
 });

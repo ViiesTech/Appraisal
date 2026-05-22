@@ -3,12 +3,11 @@ import {
   View,
   TouchableOpacity,
   StyleSheet,
-  ViewStyle,
-  StyleProp,
-  TextStyle,
+  ActivityIndicator,
 } from 'react-native';
+import type { ViewStyle, StyleProp, TextStyle } from 'react-native';
 import AppText from '../AppText';
-import { colors, fontFamily, fontSize, sizes } from '../../services/utilities';
+import { colors, fontFamily, fontSize, sizes } from '../../utils';
 
 type ButtonVariant = 'filled' | 'outline';
 
@@ -19,6 +18,7 @@ interface ScreenFooterActionsProps {
   secondaryLabel?: string;
   onSecondaryPress?: () => void;
   helperText?: string;
+  isLoading?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   primaryButtonStyle?: StyleProp<ViewStyle>;
   secondaryButtonStyle?: StyleProp<ViewStyle>;
@@ -34,6 +34,7 @@ const ScreenFooterActions = ({
   secondaryLabel,
   onSecondaryPress,
   helperText,
+  isLoading = false,
   containerStyle,
   primaryButtonStyle,
   secondaryButtonStyle,
@@ -52,16 +53,24 @@ const ScreenFooterActions = ({
           primaryButtonStyle,
         ]}
         activeOpacity={0.85}
-        onPress={onPrimaryPress}
+        onPress={isLoading ? undefined : onPrimaryPress}
+        disabled={isLoading}
       >
-        <AppText
-          fontSize={fontSize.medium}
-          fontFamily={fontFamily.Bold}
-          color={isPrimaryOutline ? colors.textDark : colors.white}
-          style={primaryTextStyle}
-        >
-          {primaryLabel}
-        </AppText>
+        {isLoading ? (
+          <ActivityIndicator
+            size="small"
+            color={isPrimaryOutline ? colors.blueNormal : colors.white}
+          />
+        ) : (
+          <AppText
+            fontSize={fontSize.medium}
+            fontFamily={fontFamily.Bold}
+            color={isPrimaryOutline ? colors.textDark : colors.white}
+            style={primaryTextStyle}
+          >
+            {primaryLabel}
+          </AppText>
+        )}
       </TouchableOpacity>
 
       {secondaryLabel ? (

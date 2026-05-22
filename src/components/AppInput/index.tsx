@@ -2,8 +2,8 @@ import React from 'react';
 import { View, TextInput, TextInputProps, TouchableOpacity, ImageSourcePropType, StyleProp, ViewStyle, ImageStyle } from 'react-native';
 import AppText from '../AppText';
 import AppImage from '../AppImage';
-import { colors } from '../../services/utilities/colors';
-import { fontSize, fontFamily } from '../../services/utilities/fonts';
+import { colors } from '../../utils/colors';
+import { fontSize, fontFamily } from '../../utils/fonts';
 import Icon from 'react-native-vector-icons/Feather';
 import styles from './style';
 

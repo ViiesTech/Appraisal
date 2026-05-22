@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View } from 'react-native';
+import { View, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Wrapper, AppText, AppInput, Button, AppKeyboardAvoidingView } from '../../components';
-import { colors } from '../../services/utilities/colors';
-import { fontSize, fontFamily } from '../../services/utilities/fonts';
+import { colors } from '../../utils/colors';
+import { fontSize, fontFamily } from '../../utils/fonts';
 import styles from './style';
-import { sizes } from '../../services/utilities';
-import { setAuthToken } from '../../store/authSlice';
+import { setCredentials } from '../../redux/slices/authSlice';
 import { useDispatch } from 'react-redux';
+import { useVerifyOtpMutation, useVerifyEmailMutation, useForgotPasswordMutation } from '../../redux/api/apiSlice';
+import { showToast } from '../../utils/toast';
 
 const VerifyAccount = ({ route, navigation }: any) => {
-    const { email } = route.params || { email: 'user@example.com' };
+    const { email, flow } = route.params || { email: 'user@example.com', flow: 'signup' };
 
-    const dispatch = useDispatch()
+    const dispatch = useDispatch();
+    const [verifyOtp, { isLoading: isVerifying }] = useVerifyOtpMutation();
+    const [verifyEmail, { isLoading: isVerifyingEmail }] = useVerifyEmailMutation();
+    const [forgotPassword, { isLoading: isResending }] = useForgotPasswordMutation();
 
     const [code, setCode] = useState<string>('');
     const [timer, setTimer] = useState<number>(59);
@@ -26,26 +30,52 @@ const VerifyAccount = ({ route, navigation }: any) => {
         return () => clearInterval(interval);
     }, [timer]);
 
-    const handleResendCode = () => {
-        if (timer === 0) {
-            setTimer(59);
-            setError('');
-            console.log('Resending code to:', email);
-            // Add resend API call logic here
+    const handleResendCode = async () => {
+        if (timer === 0 && !isResending) {
+            try {
+                const result = await forgotPassword({ email }).unwrap();
+                if (result.success) {
+                    showToast('success', 'Code Resent', result.message);
+                    setTimer(59);
+                    setError('');
+                } else {
+                    showToast('error', 'Error', result.message);
+                }
+            } catch (err: any) {
+                const errorMsg = err?.data?.message || 'Failed to resend code';
+                showToast('error', 'Error', errorMsg);
+            }
         }
     };
 
-    const handleVerify = () => {
+    const handleVerify = async () => {
         if (!code) {
             setError('Verification code is required');
         } else if (code.length < 4) {
             setError('Please enter a 4-digit code');
         } else {
             setError('');
-            console.log('Verifying code:', code);
-            const token = 'asdad4a54sa5d'
-            dispatch(setAuthToken(token))
-            // navigation.navigate('Home');
+            try {
+                const result = flow === 'signup'
+                    ? await verifyEmail({ email, otp: code }).unwrap()
+                    : await verifyOtp({ email, otp: code }).unwrap();
+                if (result.success) {
+                    showToast('success', 'Verified', result.message);
+                    if (result.token) {
+                        // Signup / unverified-login flow: token returned → save credentials → go to app
+                        dispatch(setCredentials({ token: result.token, user: result.appraiser }));
+                    } else {
+                        // Forgot-password flow: no token → proceed to reset password
+                        navigation.navigate('ResetPassword', { email });
+                    }
+                } else {
+                    showToast('error', 'Verification Failed', result.message);
+                }
+            } catch (err: any) {
+                const errorMsg = err?.data?.message || 'Invalid verification code';
+                showToast('error', 'Verification Failed', errorMsg);
+                setError(errorMsg);
+            }
         }
     };
 
@@ -82,22 +112,30 @@ const VerifyAccount = ({ route, navigation }: any) => {
                             }}
                             errorMessage={error}
                         />
-
                     </View>
                     <View style={styles.resendTextContainer}>
                         <View style={styles.resendContainer}>
                             <AppText fontSize={fontSize.smallM} color={colors.textLighter}>
                                 Didn't Receive Code?{' '}
                             </AppText>
-                            <AppText
-                                fontSize={fontSize.smallM}
-                                fontFamily={fontFamily.Bold}
-                                color={timer === 0 ? colors.blueNormal : colors.iconLight}
-                                style={timer === 0 ? styles.resendCodeActive : {}}
+                            <TouchableOpacity
                                 onPress={handleResendCode}
+                                disabled={timer > 0 || isResending}
+                                style={{ flexDirection: 'row', alignItems: 'center' }}
                             >
-                                Resend Code
-                            </AppText>
+                                {isResending ? (
+                                    <ActivityIndicator size="small" color={colors.blueNormal} />
+                                ) : (
+                                    <AppText
+                                        fontSize={fontSize.smallM}
+                                        fontFamily={fontFamily.Bold}
+                                        color={timer === 0 && !isResending ? colors.blueNormal : colors.iconLight}
+                                        style={timer === 0 && !isResending ? styles.resendCodeActive : {}}
+                                    >
+                                        Resend Code
+                                    </AppText>
+                                )}
+                            </TouchableOpacity>
                         </View>
                         <AppText
                             fontSize={fontSize.smallM}
@@ -109,13 +147,13 @@ const VerifyAccount = ({ route, navigation }: any) => {
                     </View>
                 </View>
 
-
                 <View style={styles.footer}>
                     <Button
                         title="Verify Account"
                         variant="dark"
                         style={styles.verifyButton}
                         onPress={handleVerify}
+                        isLoading={isVerifying || isVerifyingEmail}
                     />
                 </View>
             </AppKeyboardAvoidingView>

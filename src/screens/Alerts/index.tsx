@@ -1,7 +1,7 @@
 import React from 'react';
 import { Wrapper, AppText } from '../../components';
-import { fontSize, fontFamily } from '../../services/utilities/fonts';
-import { colors } from '../../services/utilities/colors';
+import { fontSize, fontFamily } from '../../utils/fonts';
+import { colors } from '../../utils/colors';
 import { StyleSheet } from 'react-native';
 
 const Alerts = () => {

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
-import { colors } from '../../services/utilities/colors';
+import { colors } from '../../utils/colors';
 import styles from './style';
 
 interface AuthHeaderProps {

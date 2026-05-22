@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { AppText, TodaySchedule, ActiveAssignments } from '..';
-import { colors, fontSize, fontFamily, sizes } from '../../services/utilities';
+import { colors, fontSize, fontFamily, sizes } from '../../utils';
 
 const HomeOverview = () => {
     return (

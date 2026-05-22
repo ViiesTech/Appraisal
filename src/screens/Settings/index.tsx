@@ -7,11 +7,13 @@ import {
   AppScrollView,
   ScreenFooterActions,
 } from '../../components';
-import { colors, fontFamily, fontSize, sizes } from '../../services/utilities';
+import { colors, fontFamily, fontSize, sizes } from '../../utils';
 import Icon from 'react-native-vector-icons/Feather';
 import type { ViewStyle } from 'react-native';
-import { useDispatch } from 'react-redux';
-import { removeAuthToken } from '../../store/authSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { setCredentials, selectCurrentUser } from '../../redux/slices/authSlice';
+import { useUpdateProfileMutation } from '../../redux/api/apiSlice';
+import { showToast } from '../../utils/toast';
 
 const headerContainerStyle: ViewStyle = {
   paddingTop: sizes.screenHeight * 0.03,
@@ -20,25 +22,62 @@ const headerContainerStyle: ViewStyle = {
   borderBottomColor: '#E5E6EB',
 };
 
-const Settings = () => {
+const Settings = ({ navigation }: any) => {
   const dispatch = useDispatch();
-  const [emailNotif, setEmailNotif] = useState(true);
-  const [pushNotif, setPushNotif] = useState(true);
+  const user = useSelector(selectCurrentUser);
+  const [updateProfile] = useUpdateProfileMutation();
+
+  const [allNotif, setAllNotif] = useState<boolean>(user?.notify?.all ?? true);
+  const [emailNotif, setEmailNotif] = useState<boolean>(user?.notify?.email ?? true);
+  const [pushNotif, setPushNotif] = useState<boolean>(user?.notify?.push ?? true);
+
+  const handleNotifChange = async (key: 'all' | 'email' | 'push', value: boolean) => {
+    let updated = { all: allNotif, email: emailNotif, push: pushNotif, [key]: value };
+    if (key === 'all') {
+      updated = { all: value, email: value, push: value };
+      setAllNotif(value);
+      setEmailNotif(value);
+      setPushNotif(value);
+    } else if (key === 'email') {
+      setEmailNotif(value);
+    } else {
+      setPushNotif(value);
+    }
+
+    try {
+      const result = await updateProfile({ notify: updated }).unwrap();
+      if (result?.appraiser) {
+        dispatch(setCredentials({ user: result.appraiser }));
+      }
+    } catch (err: any) {
+      // Revert on failure
+      if (key === 'all') {
+        setAllNotif(!value);
+        setEmailNotif(!value);
+        setPushNotif(!value);
+      } else if (key === 'email') {
+        setEmailNotif(!value);
+      } else {
+        setPushNotif(!value);
+      }
+      showToast('error', 'Update Failed', err?.data?.message || 'Failed to update notification settings');
+    }
+  };
 
   return (
     <Wrapper
       style={styles.container}
-      statusBarTranslucent={true}
-      statusBarHidden={true}
-      barStyle="light-content"
-      edges={['bottom', 'left', 'right']}
     >
       <AppHeader title="Settings" containerStyle={headerContainerStyle} />
       <AppScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.sectionCard}>
           <AppText style={styles.sectionHeading}>Account</AppText>
           <View style={styles.sectionDivider} />
-          <TouchableOpacity style={styles.rowCard} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={styles.rowCard}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('ChangePassword')}
+          >
             <View style={styles.rowLeft}>
               <View style={styles.leadingIconWrap}>
                 <Icon name="lock" size={15} color={colors.blueNormal} />
@@ -72,8 +111,8 @@ const Settings = () => {
                 </View>
               </View>
               <Switch
-                value={emailNotif}
-                onValueChange={setEmailNotif}
+                value={allNotif}
+                onValueChange={v => handleNotifChange('all', v)}
                 trackColor={{ false: '#D1D5DB', true: colors.blueNormal }}
                 thumbColor={colors.white}
               />
@@ -90,9 +129,10 @@ const Settings = () => {
               </View>
               <Switch
                 value={emailNotif}
-                onValueChange={setEmailNotif}
+                onValueChange={v => handleNotifChange('email', v)}
                 trackColor={{ false: '#D1D5DB', true: colors.blueNormal }}
                 thumbColor={colors.white}
+                disabled={!allNotif}
               />
             </View>
 
@@ -107,15 +147,16 @@ const Settings = () => {
               </View>
               <Switch
                 value={pushNotif}
-                onValueChange={setPushNotif}
+                onValueChange={v => handleNotifChange('push', v)}
                 trackColor={{ false: '#D1D5DB', true: colors.blueNormal }}
                 thumbColor={colors.white}
+                disabled={!allNotif}
               />
             </View>
           </View>
         </View>
 
-        <View style={styles.sectionCard}>
+        {/* <View style={styles.sectionCard}>
           <AppText style={styles.sectionHeading}>Preferences</AppText>
           <View style={styles.sectionDivider} />
           <View style={styles.rowCardDisabled}>
@@ -135,13 +176,13 @@ const Settings = () => {
               thumbColor={colors.white}
             />
           </View>
-        </View>
+        </View> */}
       </AppScrollView>
 
       <ScreenFooterActions
         primaryLabel="Logout"
         primaryVariant="outline"
-        onPrimaryPress={() => dispatch(removeAuthToken())}
+        onPrimaryPress={() => dispatch({ type: 'RESET_STORE' })}
         containerStyle={styles.footer}
         primaryButtonStyle={styles.logoutBtn}
         primaryTextStyle={styles.logoutText}

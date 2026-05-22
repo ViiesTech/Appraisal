@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "563987431295",
+    "project_id": "appraisal-61daf",
+    "storage_bucket": "appraisal-61daf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:563987431295:android:43b6f23d89eb7a2f00e44a",
+        "android_client_info": {
+          "package_name": "com.appraisal"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "563987431295-264re69cpl9cbf5drcdavhi2309u5e6o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.appraisal",
+            "certificate_hash": "f7e97cf1e466337d1e22fe47e687493cec1edc7f"
+          }
+        },
+        {
+          "client_id": "563987431295-f5jlp3o2e39opmsm4p63pdl9u2ia648m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.appraisal",
+            "certificate_hash": "ec9904304cadbc1332ddfd00132c15f0c45b659f"
+          }
+        },
+        {
+          "client_id": "563987431295-u2juliqapsokksne3mn3q9b0acf8kjo5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXL_t6qliaNpWe9bTEa-CxcBPK8zzWbmQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "563987431295-u2juliqapsokksne3mn3q9b0acf8kjo5.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "563987431295-lt3u4gnvfsiis37arsunspkbg2jniifi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.realestateappraisal.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

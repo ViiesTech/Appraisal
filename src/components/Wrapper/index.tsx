@@ -1,8 +1,7 @@
 import React from 'react';
 import { StyleSheet, ViewStyle, StyleProp, View, StatusBar } from 'react-native'
 import { SafeAreaView, Edge } from 'react-native-safe-area-context'
-import { colors } from '../../services/utilities/colors'
-import { sizes } from '../../services/utilities';
+import { colors } from '../../utils/colors'
 
 type Props = {
     children: React.ReactNode;
@@ -19,11 +18,10 @@ const Wrapper = ({
     barStyle = 'dark-content',
     statusBarHidden = false,
     statusBarTranslucent = false,
-    edges = ['top', 'bottom', 'left', 'right']
 }: Props) => {
 
     return (
-        <SafeAreaView style={[styles.container, style]} edges={edges}>
+        <SafeAreaView edges={['top']} style={[styles.container, style]} >
             <StatusBar
                 barStyle={barStyle}
                 hidden={statusBarHidden}

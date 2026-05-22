@@ -3,106 +3,138 @@ import {
   Wrapper,
   AppText,
   AppHeader,
-  AppScrollView,
   TaskCard,
+  TaskCardSkeleton,
 } from '../../components';
-import { fontSize, fontFamily } from '../../services/utilities/fonts';
-import { colors, sizes } from '../../services/utilities';
+import { fontSize, fontFamily } from '../../utils/fonts';
+import { colors, sizes } from '../../utils';
 import {
   StyleSheet,
   ViewStyle,
   View,
   TouchableOpacity,
   ScrollView,
+  FlatList,
+  Text,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { MainStackParamList } from '../../services/config/navigation';
+import { MainStackParamList } from '../../navigation';
+import { useGetOrdersQuery } from '../../redux/api/apiSlice';
+import moment from 'moment';
+import Icon from 'react-native-vector-icons/Feather';
 
 const headerContainerStyle: ViewStyle = {
-  paddingTop: sizes.screenHeight * 0.03,
+  // paddingTop: sizes.screenHeight * 0.03,
   backgroundColor: colors.white,
   borderBottomWidth: 1,
   borderBottomColor: '#E5E6EB',
 };
 
-interface TaskItem {
-  id: string;
-  status: 'In Progress' | 'Scheduled' | 'Overdue' | 'Pending' | 'Completed';
-  priority: 'High Priority' | 'Medium' | 'URGENT - Overdue' | 'Low';
-  address: string;
-  propertyName: string;
-  progress: number;
-  dueDate: string;
-  statusColor: string;
-  priorityColor: string;
-  progressColor: string;
+type TabKey =
+  | 'all'
+  | 'assigned'
+  | 'scheduled'
+  | 'underReview'
+  | 'finalReportInProgress'
+  | 'overdue'
+  | 'completed';
+
+interface Tab {
+  key: TabKey;
+  label: string;
 }
 
-const taskItems: TaskItem[] = [
-  {
-    id: '1',
-    status: 'In Progress',
-    priority: 'High Priority',
-    address: '1234 Oak Street, San Francisco, CA 94102',
-    propertyName: 'ABC Real Estate',
-    progress: 65,
-    dueDate: 'Jan 25, 2026',
-    statusColor: colors.statusBlue,
-    priorityColor: colors.priorityRedText,
-    progressColor: colors.statusBlue,
-  },
-  {
-    id: '2',
-    status: 'Scheduled',
-    priority: 'Medium',
-    address: '5678 Pine Avenue, Los Angeles, CA 90001',
-    propertyName: 'XYZ Mortgage Corp',
-    progress: 45,
-    dueDate: 'Jan 20, 2026',
-    statusColor: colors.error,
-    priorityColor: colors.error,
-    progressColor: colors.error,
-  },
-  {
-    id: '4',
-    status: 'Pending',
-    priority: 'Low',
-    address: '3456 Elm Street, Sacramento, CA 95814',
-    propertyName: 'Global Appraisals',
-    progress: 0,
-    dueDate: 'Jan 28, 2026',
-    statusColor: colors.statusGray,
-    priorityColor: colors.statusGray,
-    progressColor: colors.statusGray,
-  },
-  {
-    id: '5',
-    status: 'Completed',
-    priority: 'Low',
-    address: '7890 Birch Road, Oakland, CA 94601',
-    propertyName: 'Metro Bank',
-    progress: 100,
-    dueDate: 'Jan 15, 2026',
-    statusColor: colors.statusBlue,
-    priorityColor: colors.statusBlue,
-    progressColor: colors.statusBlue,
-  },
+const TABS: Tab[] = [
+  { key: 'all', label: 'All' },
+  { key: 'assigned', label: 'Assigned' },
+  { key: 'scheduled', label: 'Scheduled' },
+  { key: 'underReview', label: 'Under Review' },
+  { key: 'finalReportInProgress', label: 'Final Report In Progress' },
+  { key: 'overdue', label: 'Overdue' },
+  { key: 'completed', label: 'Completed' },
 ];
 
-const headerTabItems = ['All (5)', 'In Progress', 'Scheduled', 'Overdue'];
+const getStatusDisplay = (status: string) => {
+  switch (status?.toLowerCase()) {
+    case 'assigned':
+      return { label: 'Assigned', color: colors.statusBlue };
+    case 'scheduled':
+      return { label: 'Scheduled', color: colors.statusAmber };
+    case 'underreview':
+      return { label: 'Under Review', color: colors.statusAmber };
+    case 'finalreportinprogress':
+      return { label: 'Final Report In Progress', color: colors.statusBlue };
+    case 'overdue':
+      return { label: 'Overdue', color: colors.priorityRedText };
+    case 'completed':
+      return {
+        label: 'Completed',
+        color: colors.statusGreen ?? colors.statusBlue,
+      };
+    default:
+      return { label: status, color: colors.statusGray };
+  }
+};
+
+const getPriorityDisplay = (priority: string) => {
+  switch (priority?.toLowerCase()) {
+    case 'high':
+      return { label: 'High', color: colors.priorityRedText };
+    case 'medium':
+      return { label: 'Medium', color: colors.priorityAmberText };
+    default:
+      return { label: 'Low', color: colors.priorityGrayText };
+  }
+};
+
+const TasksSkeleton = () => (
+  <View style={{ gap: sizes.screenHeight * 0.012 }}>
+    {[1, 2, 3, 4, 5].map(i => (
+      <TaskCardSkeleton key={i} />
+    ))}
+  </View>
+);
 
 const Tasks = () => {
-  const [activeTab, setActiveTab] = useState('All (5)');
+  const [activeTab, setActiveTab] = useState<TabKey>('all');
   const navigation = useNavigation<StackNavigationProp<MainStackParamList>>();
+
+  const queryParams =
+    activeTab === 'all'
+      ? { page: 1, limit: 50 }
+      : { status: activeTab, page: 1, limit: 50 };
+
+  const { data, isLoading, isFetching } = useGetOrdersQuery(queryParams);
+  const orders = data?.orders ?? [];
+
+  const renderItem = ({ item }: { item: (typeof orders)[0] }) => {
+    const statusDisplay = getStatusDisplay(item.status);
+    const priorityDisplay = getPriorityDisplay(item.priority);
+    return (
+      <TaskCard
+        status={statusDisplay.label}
+        priority={priorityDisplay.label}
+        address={item.property?.address ?? '—'}
+        progress={item.progressPercent ?? 0}
+        dueDate={
+          item.deadline ? moment.utc(item.deadline).format('MMM D, YYYY') : '—'
+        }
+        organizationName={item.client?.name}
+        statusColor={statusDisplay.color}
+        priorityColor={priorityDisplay.color}
+        progressColor={statusDisplay.color}
+        variant="task"
+        onPress={() =>
+          navigation.navigate('AssignmentDetails', { orderId: item._id })
+        }
+      />
+    );
+  };
 
   return (
     <Wrapper
       style={styles.container}
-      statusBarTranslucent={true}
-      statusBarHidden={true}
-      barStyle="light-content"
-      edges={['bottom', 'left', 'right']}
     >
       <AppHeader
         title="My Tasks"
@@ -117,48 +149,76 @@ const Tasks = () => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.headerTabsContent}
             >
-              {headerTabItems.map(tab => (
-                <TouchableOpacity
-                  key={tab}
-                  onPress={() => setActiveTab(tab)}
-                  style={[styles.headerTab]}
-                >
-                  <AppText
-                    fontSize={fontSize.smallM}
-                    fontFamily={fontFamily.Bold}
-                    color={
-                      activeTab === tab ? colors.blueNormal : colors.textLighter
-                    }
+              {TABS.map(tab => {
+                const isActive = activeTab === tab.key;
+                return (
+                  <TouchableOpacity
+                    key={tab.key}
+                    onPress={() => setActiveTab(tab.key)}
+                    style={[
+                      styles.headerTab,
+                      isActive && styles.headerTabActive,
+                    ]}
                   >
-                    {tab}
-                  </AppText>
-                </TouchableOpacity>
-              ))}
+                    <AppText
+                      fontSize={fontSize.smallM}
+                      fontFamily={fontFamily.Bold}
+                      color={isActive ? colors.blueNormal : colors.white}
+                    >
+                      {tab.label}
+                    </AppText>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
           </View>
         }
       />
 
-      {/* Header Tabs */}
-
-      <AppScrollView contentContainerStyle={styles.scrollContent}>
-        {taskItems.map(item => (
-          <TaskCard
-            key={item.id}
-            status={item.status}
-            priority={item.priority}
-            address={item.address}
-            progress={item.progress}
-            dueDate={item.dueDate}
-            organizationName={item.propertyName}
-            statusColor={item.statusColor}
-            priorityColor={item.priorityColor}
-            progressColor={item.progressColor}
-            variant="task"
-                     onPress={() => navigation.navigate('AssignmentDetails')}
-          />
-        ))}
-      </AppScrollView>
+      {isLoading || isFetching ? (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <TasksSkeleton />
+        </ScrollView>
+      ) : (
+        <FlatList
+          data={orders}
+          keyExtractor={item => item._id}
+          renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.scrollContent,
+            orders.length === 0 && styles.emptyContainer,
+          ]}
+          ListEmptyComponent={
+            <View style={styles.emptyContent}>
+              <Icon name="clipboard" size={40} color={colors.textLighter} />
+              <AppText
+                fontSize={fontSize.h6}
+                fontFamily={fontFamily.Bold}
+                color={colors.textLighter}
+                style={styles.emptyTitle}
+              >
+                No tasks found
+              </AppText>
+              <AppText
+                fontSize={fontSize.smallM}
+                fontFamily={fontFamily.Regular}
+                color={colors.placeholderText}
+                style={styles.emptySubtitle}
+              >
+                {activeTab === 'all'
+                  ? 'You have no assignments yet'
+                  : `No ${TABS.find(
+                      t => t.key === activeTab,
+                    )?.label.toLowerCase()} tasks`}
+              </AppText>
+            </View>
+          }
+        />
+      )}
     </Wrapper>
   );
 };
@@ -171,7 +231,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.AppBG,
   },
   headerTabsContainer: {
-    // backgroundColor: colors.white,
     paddingVertical: sizes.screenHeight * 0.01,
     paddingTop: sizes.screenHeight * 0.001,
   },
@@ -179,18 +238,44 @@ const styles = StyleSheet.create({
     gap: sizes.screenWidth * 0.025,
   },
   headerTab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: sizes.screenWidth * 0.015,
     paddingHorizontal: sizes.screenWidth * 0.04,
     paddingVertical: sizes.screenHeight * 0.008,
-    borderRadius: 10,
-    backgroundColor: colors.white,
+    borderRadius: 20,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#D1D5DC',
+    borderColor: 'transparent',
   },
-
+  headerTabActive: {
+    backgroundColor: colors.white,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   scrollContent: {
     paddingHorizontal: sizes.screenWidth * 0.05,
     paddingTop: sizes.screenHeight * 0.018,
     paddingBottom: sizes.screenHeight * 0.03,
     gap: sizes.screenHeight * 0.012,
+  },
+  emptyContainer: {
+    flex: 1,
+  },
+  emptyContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: sizes.screenHeight * 0.1,
+    gap: sizes.screenHeight * 0.012,
+  },
+  emptyTitle: {
+    marginTop: sizes.screenHeight * 0.008,
+  },
+  emptySubtitle: {
+    textAlign: 'center',
   },
 });

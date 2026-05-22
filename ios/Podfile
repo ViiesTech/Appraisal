@@ -23,6 +23,14 @@ target 'Appraisal' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # Firebase Messaging
+  pod 'FirebaseCoreInternal', :modular_headers => true
+  pod 'FirebaseCoreExtension', :modular_headers => true
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'nanopb', :modular_headers => true
+  pod 'Firebase/Messaging'
+  pod 'FirebaseMessaging', :modular_headers => true
+
   post_install do |installer|
     react_native_post_install(
       installer,

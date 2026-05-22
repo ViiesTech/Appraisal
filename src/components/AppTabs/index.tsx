@@ -3,9 +3,9 @@ import { View, TouchableOpacity } from 'react-native';
 import ShadowCard from '../ShadowCard';
 import AppText from '../AppText';
 import Icon from 'react-native-vector-icons/Feather';
-import { colors } from '../../services/utilities/colors';
-import { fontSize, fontFamily } from '../../services/utilities/fonts';
-import { sizes } from '../../services/utilities/sizes';
+import { colors } from '../../utils/colors';
+import { fontSize, fontFamily } from '../../utils/fonts';
+import { sizes } from '../../utils/sizes';
 import styles from './style';
 
 interface AppTabsProps {
